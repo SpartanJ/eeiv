@@ -3,27 +3,14 @@
 
 #include "../ee.h"
 
-bool IsImage( const std::string& path );
-
 class cApp {
 	public:
 		cApp( int argc, char *argv[] );
+
 		~cApp();
 
 		void Process();
 		void LoadDir( const std::string& path, const bool& getimages = true );
-
-		void CmdLoadDir( const std::vector < std::wstring >& params );
-		void CmdLoadImg( const std::vector < std::wstring >& params );
-		void CmdSetBackColor( const std::vector < std::wstring >& params );
-		void CmdSetImgFade( const std::vector < std::wstring >& params );
-		void CmdSetLateLoading( const std::vector < std::wstring >& params );
-		void CmdSetBlockWheel( const std::vector < std::wstring >& params );
-		void CmdMoveTo( const std::vector < std::wstring >& params );
-		void CmdBatchImgResize( const std::vector < std::wstring >& params );
-		void CmdBatchImgChangeFormat( const std::vector < std::wstring >& params );
-		void CmdImgResize( const std::vector < std::wstring >& params );
-		void CmdImgScale( const std::vector < std::wstring >& params );
 	private:
 		bool Init();
 		void Input();
@@ -55,6 +42,20 @@ class cApp {
 		void ScaleImg( const std::string& Path, const eeFloat& Scale );
 		void ResizeImg( const std::string& Path, const Uint32& NewWidth, const Uint32& NewHeight );
 		void ResizeTexture( cTexture * pTex, const Uint32& NewWidth, const Uint32& NewHeight, const std::string& SavePath );
+		void SwitchFade();
+
+		void CmdLoadDir( const std::vector < std::wstring >& params );
+		void CmdLoadImg( const std::vector < std::wstring >& params );
+		void CmdSetBackColor( const std::vector < std::wstring >& params );
+		void CmdSetImgFade( const std::vector < std::wstring >& params );
+		void CmdSetLateLoading( const std::vector < std::wstring >& params );
+		void CmdSetBlockWheel( const std::vector < std::wstring >& params );
+		void CmdMoveTo( const std::vector < std::wstring >& params );
+		void CmdBatchImgResize( const std::vector < std::wstring >& params );
+		void CmdBatchImgChangeFormat( const std::vector < std::wstring >& params );
+		void CmdImgChangeFormat( const std::vector < std::wstring >& params );
+		void CmdImgResize( const std::vector < std::wstring >& params );
+		void CmdImgScale( const std::vector < std::wstring >& params );
 
 		cEngine* EE;
 		cTextureFactory* TF;

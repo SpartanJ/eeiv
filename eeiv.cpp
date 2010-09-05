@@ -1,7 +1,13 @@
 #include "capp.hpp"
 
 int main(int argc, char *argv[]) {
-	cApp MyApp( argc, argv );
-	MyApp.Process();
+	cApp * MyApp = eeNew( cApp, ( argc, argv ) );
+
+	MyApp->Process();
+
+	eeDelete( MyApp );
+
+	EE::MemoryManager::LogResults();
+
 	return 0;
 }

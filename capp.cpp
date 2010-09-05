@@ -5,14 +5,15 @@
 #endif
 
 #include "../helper/SOIL/image_helper.h"
+#include "../helper/SOIL/stb_image.h"
 
-bool IsImage( const std::string& path ) {
+static bool IsImage( const std::string& path ) {
 	std::string mPath = path;
 
 	if ( path.size() >= 7 && path.substr(0,7) == "file://" )
 		mPath = path.substr( 7 );
 
-	if ( !IsDirectory(mPath) && FileExists( mPath ) ) {
+	if ( !IsDirectory(mPath) && FileSize( mPath ) ) {
 		std::string File = mPath.substr( mPath.find_last_of("/\\") + 1 );
 		std::string Ext = File.substr( File.find_last_of(".") + 1 );
 		toLower( Ext );
@@ -20,6 +21,7 @@ bool IsImage( const std::string& path ) {
 		if ( Ext == "png" || Ext == "tga" || Ext == "bmp" || Ext == "jpg" || Ext == "gif" || Ext == "jpeg" || Ext == "dds" || Ext == "psd" || Ext == "hdr" || Ext == "pic" )
 			return true;
 	}
+
 	return false;
 }
 
@@ -44,13 +46,8 @@ cApp::cApp( int argc, char *argv[] ) :
 	mFirstLoad(false),
 	mUsedTempDir(false)
 {
-	#if EE_PLATFORM == EE_PLATFORM_WIN32
-		SLASH = "\\";
-	#else
-    	SLASH = "/";
-	#endif
-	mStorePath = StoragePath( "eeiv" ) + SLASH;
-	mTmpPath = mStorePath + "tmp" + SLASH;
+	mStorePath = StoragePath( "eeiv" ) + GetOSlash();
+	mTmpPath = mStorePath + "tmp" + GetOSlash();
 
 	std::string nstr;
 
@@ -140,11 +137,11 @@ bool cApp::Init() {
 		if ( mConfig.MaximizeAtStart )
 			EE->MaximizeWindow();
 
-		std::string MyFontPath = MyPath + "fonts" + SLASH;
+		std::string MyFontPath = MyPath + "fonts" + GetOSlash();
 
 		if ( FileExists( MyFontPath + "DejaVuSans.dds" ) && FileExists( MyFontPath + "DejaVuSans.dat" ) && FileExists( MyFontPath + "DejaVuSansMono.dds" ) && FileExists( MyFontPath + "DejaVuSansMono.dat" ) ) {
-			TexF = new cTextureFont( "DejaVuSans" );
-			TexFMon = new cTextureFont( "DejaVuSansMono" );
+			TexF 	= eeNew( cTextureFont, ( "DejaVuSans" ) );
+			TexFMon = eeNew( cTextureFont, ( "DejaVuSansMono" ) );
 
 			TexF->Load( TF->Load( MyFontPath + "DejaVuSans.dds" ), MyFontPath + "DejaVuSans.dat" );
 			TexFMon->Load( TF->Load( MyFontPath + "DejaVuSansMono.dds" ), MyFontPath + "DejaVuSansMono.dat" );
@@ -152,8 +149,8 @@ bool cApp::Init() {
 			Fon = reinterpret_cast<cFont*> ( TexF );
 			Mon = reinterpret_cast<cFont*> ( TexFMon );
 		} else {
-			TTF = new cTTFFont( "DejaVuSans" );
-			TTFMon = new cTTFFont( "DejaVuSansMono" );
+			TTF 	= eeNew( cTTFFont, ( "DejaVuSans" ) );
+			TTFMon 	= eeNew( cTTFFont, ( "DejaVuSansMono" ) );
 
 			#if EE_PLATFORM == EE_PLATFORM_WIN32
 			std::string WinPath = GetWindowsPath() + "\\Fonts\\";
@@ -196,6 +193,7 @@ bool cApp::Init() {
 		Con.AddCommand( L"moveto", boost::bind( &cApp::CmdMoveTo, this, _1 ) );
 		Con.AddCommand( L"batchimgresize", boost::bind( &cApp::CmdBatchImgResize, this, _1 ) );
 		Con.AddCommand( L"batchimgchangeformat", boost::bind( &cApp::CmdBatchImgChangeFormat, this, _1 ) );
+		Con.AddCommand( L"imgchangeformat", boost::bind( &cApp::CmdImgChangeFormat, this, _1 ) );
 		Con.AddCommand( L"imgresize", boost::bind( &cApp::CmdImgResize, this, _1 ) );
 		Con.AddCommand( L"imgscale", boost::bind( &cApp::CmdImgScale, this, _1 ) );
 
@@ -269,7 +267,7 @@ void cApp::LoadDir( const std::string& path, const bool& getimages ) {
 	if ( !IsDirectory( path ) ) {
 		if ( path.substr(0,7) == "file://" ) {
 			mFilePath = path.substr( 7 );
-			mFilePath = mFilePath.substr( 0, mFilePath.find_last_of(SLASH) );
+			mFilePath = mFilePath.substr( 0, mFilePath.find_last_of( GetOSlash() ) );
 		} else if ( path.substr(0,7) == "http://" || path.substr(0,6) == "ftp://" || path.substr(0,8) == "https://" ) {
 			mUsedTempDir = true;
 
@@ -285,7 +283,7 @@ void cApp::LoadDir( const std::string& path, const bool& getimages ) {
 
 			mFilePath = mTmpPath;
 		} else {
-			mFilePath = path.substr( 0, path.find_last_of(SLASH) );
+			mFilePath = path.substr( 0, path.find_last_of( GetOSlash() ) );
 		}
 
 		size_t res;
@@ -299,14 +297,13 @@ void cApp::LoadDir( const std::string& path, const bool& getimages ) {
 			#if EE_PLATFORM == EE_PLATFORM_WIN32
 				mFilePath = "C:\\";
 			#else
-				mFilePath = SLASH;
+				mFilePath = GetOSlash();
 			#endif
 		}
 
-		if ( mFilePath[ mFilePath.size() - 1 ] != '/' )
-			mFilePath += "/";
+		DirPathAddSlashAtEnd( mFilePath );
 
-		std::string tmpFile = path.substr( path.find_last_of(SLASH) + 1 );
+		std::string tmpFile = path.substr( path.find_last_of( GetOSlash() ) + 1 );
 
 		if ( IsImage( mFilePath + tmpFile ) )
 			mFile = tmpFile;
@@ -315,8 +312,7 @@ void cApp::LoadDir( const std::string& path, const bool& getimages ) {
 	} else {
 		mFilePath = path;
 
-		if ( mFilePath[ mFilePath.size() - 1 ] != '/' )
-			mFilePath += "/";
+		DirPathAddSlashAtEnd( mFilePath );
 	}
 
 	mCurImg = 0;
@@ -345,6 +341,8 @@ void cApp::ClearTempDir() {
 }
 
 void cApp::GetImages() {
+	cTimeElapsed TE;
+
 	Uint32 i;
 	std::vector<std::string> tStr;
 	mFiles.clear();
@@ -363,6 +361,8 @@ void cApp::GetImages() {
 
 		mFiles.push_back( tmpI );
 	}
+
+	Con.PushText( "Image list loaded in %f ms.", TE.ElapsedSinceStart() );
 
 	Con.PushText( "Directory: \"" + mFilePath + "\"" );
 	for ( Uint32 i = 0; i < mFiles.size(); i++ )
@@ -514,6 +514,18 @@ void cApp::LoadPrevImage() {
 	}
 }
 
+void cApp::SwitchFade() {
+	if ( mFade ) {
+		mAlpha = 255.0f;
+		mCurAlpha = 255;
+		mFading = false;
+	}
+
+	mFade = !mFade;
+	mLateLoading = !mLateLoading;
+	mBlockWheelSpeed = !mBlockWheelSpeed;
+}
+
 void cApp::Input() {
 	KM->Update();
 	Mouse = KM->GetMousePos();
@@ -536,11 +548,8 @@ void cApp::Input() {
 		ScaleToScreen();
 	}
 
-	if ( KM->IsKeyUp(KEY_F5) ) {
-		mFade = !mFade;
-		mLateLoading = !mLateLoading;
-		mBlockWheelSpeed = !mBlockWheelSpeed;
-	}
+	if ( KM->IsKeyUp(KEY_F5) )
+		SwitchFade();
 
 	if ( KM->IsKeyUp(KEY_F3) || KM->IsKeyUp(KEY_WORLD_26) )
 		Con.Toggle();
@@ -719,10 +728,10 @@ void cApp::Input() {
 		if ( KM->IsKeyUp(KEY_A) ) {
 			cTexture* Tex = TF->GetTexture( mImg.GetTexture() );
 			if ( Tex ) {
-				if ( Tex->Filter() == TEX_LINEAR )
-					Tex->SetTextureFilter( TEX_NEAREST );
+				if ( Tex->Filter() == TEX_FILTER_LINEAR )
+					Tex->SetTextureFilter( TEX_FILTER_NEAREST );
 				else
-					Tex->SetTextureFilter( TEX_LINEAR );
+					Tex->SetTextureFilter( TEX_FILTER_LINEAR );
 			}
 		}
 
@@ -872,7 +881,7 @@ void cApp::ResizeTexture( cTexture * pTex, const Uint32& NewWidth, const Uint32&
 
 		SOIL_save_image( Str.c_str(), SOIL_SAVE_TYPE_PNG, new_width, new_height, pTex->Channels(), resampled );
 
-		eeSAFE_DELETE_ARRAY( resampled );
+		eeSAFE_FREE( resampled );
 
 		pTex->Unlock(false, false);
 	} else
@@ -1005,6 +1014,71 @@ void cApp::CmdBatchImgResize( const std::vector < std::wstring >& params ) {
 	}
 }
 
+void cApp::CmdImgChangeFormat( const std::vector < std::wstring >& params ) {
+	std::wstring Error( L"Example of use: imgchangeformat to_format image_to_reformat ( if null will use the current loaded image )" );
+	if ( params.size() >= 2 ) {
+		try {
+			std::string toFormat = wstringTostring( params[1] );
+			std::string myPath;
+
+			if ( params.size() >= 3 )
+				myPath = wstringTostring( params[2] );
+			else
+				myPath = mFilePath + mFile;
+
+			if ( params.size() > 3 ) {
+				for ( Uint32 i = 4; i < params.size(); i++ )
+					myPath += " " + wstringTostring( params[i] );
+			}
+
+			std::string fromFormat = FileExtension( myPath );
+
+			Int32 x, y, c;
+
+			if ( stbi_info( myPath.c_str(), &x, &y, &c ) ) {
+				std::string fPath 	= myPath;
+				std::string fExt	= FileExtension( fPath );
+
+				if ( IsImage( fPath ) && fExt == fromFormat ) {
+					std::string fName;
+
+					if ( fExt != toFormat )
+						fName = fPath.substr( 0, fPath.find_last_of(".") + 1 ) + toFormat;
+					else
+						fName = fPath + "." + toFormat;
+
+					int saveType = -1;
+
+					if ( toFormat == "tga" )
+						saveType = SOIL_SAVE_TYPE_TGA;
+					else if ( toFormat == "bmp" )
+						saveType = SOIL_SAVE_TYPE_BMP;
+					else if ( toFormat == "png" )
+						saveType = SOIL_SAVE_TYPE_PNG;
+					else if ( toFormat == "dds" )
+						saveType = SOIL_SAVE_TYPE_DDS;
+
+					if ( -1 != saveType ) {
+						int w, h, c;
+						unsigned char * img = SOIL_load_image( fPath.c_str(), &w, &h, &c, SOIL_LOAD_AUTO );
+						SOIL_save_image( fName.c_str(), saveType, w, h, c, reinterpret_cast<const unsigned char*>( img ) );
+						SOIL_free_image_data( img );
+
+						Con.PushText( fName + " created." );
+					}
+				}
+			} else
+				Con.PushText( "Third argument is not a directory! Argument: " + myPath );
+		} catch (...) {
+			Con.PushText( Error );
+		}
+	}
+	else
+	{
+		Con.PushText( Error );
+	}
+}
+
 void cApp::CmdBatchImgChangeFormat( const std::vector < std::wstring >& params ) {
 	std::wstring Error( L"Example of use: batchimgchangeformat from_format to_format directory_to_reformat" );
 	if ( params.size() >= 4 ) {
@@ -1052,6 +1126,8 @@ void cApp::CmdBatchImgChangeFormat( const std::vector < std::wstring >& params )
 							unsigned char * img = SOIL_load_image( fPath.c_str(), &w, &h, &c, SOIL_LOAD_AUTO );
 							SOIL_save_image( fName.c_str(), saveType, w, h, c, reinterpret_cast<const unsigned char*>( img ) );
 							SOIL_free_image_data( img );
+
+							Con.PushText( fName + " created." );
 						}
 					}
 				}
