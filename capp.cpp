@@ -20,6 +20,14 @@ static bool IsImage( const std::string& path ) {
 
 		if ( Ext == "png" || Ext == "tga" || Ext == "bmp" || Ext == "jpg" || Ext == "gif" || Ext == "jpeg" || Ext == "dds" || Ext == "psd" || Ext == "hdr" || Ext == "pic" )
 			return true;
+		else {
+			int x,y,c;
+
+			int res = stbi_info( path.c_str(), &x, &y, &c );
+
+			if ( res )
+				return true;
+		}
 	}
 
 	return false;
@@ -951,12 +959,16 @@ void cApp::CmdImgResize( const std::vector < std::wstring >& params ) {
 		try {
 			Uint32 nWidth = boost::lexical_cast<Uint32>( wstringTostring( params[1] ) );
 			Uint32 nHeight = boost::lexical_cast<Uint32>( wstringTostring( params[2] ) );
+			std::string myPath;
 
-			std::string myPath = wstringTostring( params[3] );
-			if ( params.size() > 4 ) {
-				for ( Uint32 i = 4; i < params.size(); i++ )
-					myPath += " " + wstringTostring( params[i] );
-			}
+			if ( params.size() >= 4 ) {
+				myPath = wstringTostring( params[3] );
+				if ( params.size() > 4 ) {
+					for ( Uint32 i = 4; i < params.size(); i++ )
+						myPath += " " + wstringTostring( params[i] );
+				}
+			} else
+				myPath = mFilePath + mFile;
 
 			ResizeImg( myPath, nWidth, nHeight );
 		} catch (...) {
@@ -972,12 +984,16 @@ void cApp::CmdImgScale( const std::vector < std::wstring >& params ) {
 	if ( params.size() >= 2 ) {
 		try {
 			eeFloat Scale = boost::lexical_cast<eeFloat>( wstringTostring( params[1] ) );
+			std::string myPath;
 
-			std::string myPath = wstringTostring( params[2] );
-			if ( params.size() > 3 ) {
-				for ( Uint32 i = 3; i < params.size(); i++ )
-					myPath += " " + wstringTostring( params[i] );
-			}
+			if ( params.size() >= 3 ) {
+				myPath = wstringTostring( params[2] );
+				if ( params.size() > 3 ) {
+					for ( Uint32 i = 3; i < params.size(); i++ )
+						myPath += " " + wstringTostring( params[i] );
+				}
+			} else
+				myPath = mFilePath + mFile;
 
 			ScaleImg( myPath, Scale );
 		} catch (...) {
