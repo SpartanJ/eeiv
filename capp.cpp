@@ -1,11 +1,21 @@
 #include "capp.hpp"
-#if EE_PLATFORM == EE_PLATFORM_LINUX
-#include <X11/Xlib.h>
-#include <X11/Xcursor/Xcursor.h>
-#endif
 
 #include "../helper/SOIL/image_helper.h"
 #include "../helper/SOIL/stb_image.h"
+
+#if EE_PLATFORM == EE_PLATFORM_WIN
+static std::string GetWindowsPath() {
+	#ifdef UNICODE
+		wchar_t Buffer[1024];
+		GetWindowsDirectory( Buffer, 1024 );
+		return String( Buffer ).ToUtf8();
+	#else
+		char Buffer[1024];
+		GetWindowsDirectory( Buffer, 1024 );
+		return std::string( Buffer );
+	#endif
+}
+#endif
 
 static bool IsImage( const std::string& path ) {
 	std::string mPath = path;
@@ -52,7 +62,11 @@ cApp::cApp( int argc, char *argv[] ) :
 	mBlockWheelSpeed(true),
 	mWheelBlockTime(333),
 	mFirstLoad(false),
-	mUsedTempDir(false)
+	mUsedTempDir(false),
+	mHelpCache( NULL ),
+	mSlideShow(false),
+	mSlideTime(4000),
+	mSlideTicks(eeGetTicks())
 {
 	mStorePath = StoragePath( "eeiv" ) + GetOSlash();
 	mTmpPath = mStorePath + "tmp" + GetOSlash();
@@ -123,27 +137,42 @@ void cApp::LoadConfig() {
 bool cApp::Init() {
 	LoadConfig();
 
-	EE = cEngine::instance();
-	if ( EE->Init( mConfig.Width, mConfig.Height, mConfig.BitColor, mConfig.Windowed, mConfig.Resizeable, mConfig.VSync, mConfig.DoubleBuffering, mConfig.UseDesktopResolution, mConfig.NoFrame ) ) {
+	EE 		= cEngine::instance();
+	MyPath 	= GetProcessPath();
+
+	Uint32 Style = WindowStyle::Titlebar;
+
+	if ( mConfig.NoFrame )
+		Style = WindowStyle::NoBorder;
+
+	if ( !mConfig.Windowed )
+		Style |= WindowStyle::Fullscreen;
+
+	if ( mConfig.Resizeable )
+		Style |= WindowStyle::Resize;
+
+	if ( mConfig.UseDesktopResolution )
+		Style |= WindowStyle::UseDesktopResolution;
+
+	mWindow = EE->CreateWindow( WindowSettings( mConfig.Width, mConfig.Height, mConfig.BitColor, Style, MyPath + "fonts/" + "eeiv.png" ), ContextSettings( mConfig.VSync, GLv_default, mConfig.DoubleBuffering ) );
+
+	if ( mWindow->Created() ) {
 		mFade = mConfig.Fade;
 		mLateLoading = mConfig.LateLoading;
 		mBlockWheelSpeed = mConfig.BlockWheelSpeed;
 		mShowInfo = mConfig.ShowInfo;
 
 		if ( mConfig.FrameLimit )
-			EE->SetFrameRateLimit(60);
+			mWindow->FrameRateLimit(60);
 
-		TF = cTextureFactory::instance();
-
-		MyPath = AppPath();
-
-		Log = cLog::instance();
-		KM = cInput::instance();
-		KM->SetVideoResizeCallback( boost::bind( &cApp::VideoResize, this ) );
-		RestoreMouse();
+		TF 		= cTextureFactory::instance();
+		Log 	= cLog::instance();
+		KM 		= mWindow->GetInput();
 
 		if ( mConfig.MaximizeAtStart )
-			EE->MaximizeWindow();
+			mWindow->Maximize();
+
+		cTimeElapsed TE;
 
 		std::string MyFontPath = MyPath + "fonts" + GetOSlash();
 
@@ -181,29 +210,27 @@ bool cApp::Init() {
 			Mon = reinterpret_cast<cFont*> ( TTFMon );
 		}
 
+		cLog::instance()->Writef( "Fonts loading time: %f ms", TE.ElapsedSinceStart() );
 
 		if ( !Fon && !Mon )
 			return false;
 
-		if ( FileExists( MyPath + "eeiv.png" ) ) {
-			EE->SetIcon( TF->Load( MyPath + "eeiv.png" ) );
-		}
-
 		Con.Create( Mon, true, 1024000 );
-		Con.IgnoreCharOnPrompt( L'º' );
+		Con.IgnoreCharOnPrompt( 186 );
 
-		Con.AddCommand( L"loaddir", boost::bind( &cApp::CmdLoadDir, this, _1) );
-		Con.AddCommand( L"loadimg", boost::bind( &cApp::CmdLoadImg, this, _1) );
-		Con.AddCommand( L"setbackcolor", boost::bind( &cApp::CmdSetBackColor, this, _1) );
-		Con.AddCommand( L"setimgfade", boost::bind( &cApp::CmdSetImgFade, this, _1) );
-		Con.AddCommand( L"setlateloading", boost::bind( &cApp::CmdSetLateLoading, this, _1) );
-		Con.AddCommand( L"setblockwheel", boost::bind( &cApp::CmdSetBlockWheel, this, _1) );
-		Con.AddCommand( L"moveto", boost::bind( &cApp::CmdMoveTo, this, _1 ) );
-		Con.AddCommand( L"batchimgresize", boost::bind( &cApp::CmdBatchImgResize, this, _1 ) );
-		Con.AddCommand( L"batchimgchangeformat", boost::bind( &cApp::CmdBatchImgChangeFormat, this, _1 ) );
-		Con.AddCommand( L"imgchangeformat", boost::bind( &cApp::CmdImgChangeFormat, this, _1 ) );
-		Con.AddCommand( L"imgresize", boost::bind( &cApp::CmdImgResize, this, _1 ) );
-		Con.AddCommand( L"imgscale", boost::bind( &cApp::CmdImgScale, this, _1 ) );
+		Con.AddCommand( "loaddir", cb::Make1( this, &cApp::CmdLoadDir ) );
+		Con.AddCommand( "loadimg", cb::Make1( this, &cApp::CmdLoadImg ) );
+		Con.AddCommand( "setbackcolor", cb::Make1( this, &cApp::CmdSetBackColor ) );
+		Con.AddCommand( "setimgfade", cb::Make1( this, &cApp::CmdSetImgFade ) );
+		Con.AddCommand( "setlateloading", cb::Make1( this, &cApp::CmdSetLateLoading ) );
+		Con.AddCommand( "setblockwheel", cb::Make1( this, &cApp::CmdSetBlockWheel ) );
+		Con.AddCommand( "moveto", cb::Make1( this, &cApp::CmdMoveTo ) );
+		Con.AddCommand( "batchimgresize", cb::Make1( this, &cApp::CmdBatchImgResize ) );
+		Con.AddCommand( "batchimgchangeformat", cb::Make1( this, &cApp::CmdBatchImgChangeFormat ) );
+		Con.AddCommand( "imgchangeformat", cb::Make1( this, &cApp::CmdImgChangeFormat ) );
+		Con.AddCommand( "imgresize", cb::Make1( this, &cApp::CmdImgResize ) );
+		Con.AddCommand( "imgscale", cb::Make1( this, &cApp::CmdImgScale ) );
+		Con.AddCommand( "slideshow", cb::Make1( this, &cApp::CmdSlideShow ) );
 
 		PrepareFrame();
 		GetImages();
@@ -214,34 +241,17 @@ bool cApp::Init() {
 			if ( mFiles.size() )
 				FastLoadImage( 0 );
 		}
+
 		return true;
 	}
+
 	return false;
-}
-
-void cApp::RestoreMouse() {
-	#if EE_PLATFORM == EE_PLATFORM_LINUX
-	Cursor cursor;
-	SDL_SysWMinfo info;
-	info.version.major = 1;
-	int ret = SDL_GetWMInfo(&info);
-	if(ret == 1) {
-		info.info.x11.lock_func();
-		cursor = XcursorLibraryLoadCursor(info.info.x11.display, "");
-		XDefineCursor(info.info.x11.display, info.info.x11.window, cursor);
-		info.info.x11.unlock_func();
-	}
-	#endif
-}
-
-void cApp::VideoResize() {
-	RestoreMouse();
 }
 
 void cApp::Process() {
 	if ( Init() ) {
 		do {
-			ET = EE->Elapsed();
+			ET = mWindow->Elapsed();
 
 			Input();
 
@@ -249,9 +259,9 @@ void cApp::Process() {
 
 			Render();
 
-			if ( KM->IsKeyUp(KEY_F12) ) EE->TakeScreenshot();
+			if ( KM->IsKeyUp(KEY_F12) ) mWindow->TakeScreenshot();
 
-			EE->Display();
+			mWindow->Display();
 
 			RET = TEP.ElapsedSinceStart();
 
@@ -266,7 +276,7 @@ void cApp::Process() {
 				UpdateImages();
 				mFirstLoad = false;
 			}
-		} while( EE->Running() );
+		} while( mWindow->Running() );
 	}
 	End();
 }
@@ -282,7 +292,7 @@ void cApp::LoadDir( const std::string& path, const bool& getimages ) {
 			if ( !IsDirectory( mTmpPath ) )
 				MakeDir( mTmpPath );
 
-			#if EE_PLATFORM == EE_PLATFORM_LINUX || EE_PLATFORM == EE_PLATFORM_APPLE
+			#if defined( EE_PLATFORM_POSIX )
 				std::string cmd = "wget -q -P \"" + mTmpPath + "\" \"" + path + "\"";
 				system( cmd.c_str() );
 			#elif EE_PLATFORM == EE_PLATFORM_WIN32
@@ -332,7 +342,7 @@ void cApp::LoadDir( const std::string& path, const bool& getimages ) {
 		if ( mFile.size() )
 			mCurImg = CurImagePos( mFile );
 
-		if ( EE->Running() )
+		if ( mWindow->Running() )
 			UpdateImages();
 	}
 }
@@ -372,9 +382,9 @@ void cApp::GetImages() {
 
 	Con.PushText( "Image list loaded in %f ms.", TE.ElapsedSinceStart() );
 
-	Con.PushText( "Directory: \"" + mFilePath + "\"" );
+	Con.PushText( "Directory: \"" + String::FromUtf8( mFilePath ) + "\"" );
 	for ( Uint32 i = 0; i < mFiles.size(); i++ )
-		Con.PushText( "	" + mFiles[i].Path );
+		Con.PushText( "	" + String::FromUtf8( mFiles[i].Path ) );
 }
 
 Uint32 cApp::CurImagePos( const std::string& path ) {
@@ -401,7 +411,7 @@ void cApp::SetImage( const Uint32& Tex, const std::string& path ) {
 		mImg.ScaleCentered(true);
 		mImg.SetRenderType( mImgRT );
 		mImg.Scale( 1.f );
-		mImg.UpdatePos( 0.0f, 0.0f );
+		mImg.Position( 0.0f, 0.0f );
 
 		if ( path != mFiles[ mCurImg ].Path )
 			mCurImg = CurImagePos( path );
@@ -414,14 +424,14 @@ void cApp::SetImage( const Uint32& Tex, const std::string& path ) {
 
 		if ( NULL != pTex ) {
 			Fon->SetText(
-				"File: " + mFile +
+				"File: " + String::FromUtf8( mFile ) +
 				"\nWidth: " + intToStr( pTex->Width() ) +
 				"\nHeight: " + intToStr( pTex->Height() ) +
 				"\n" + intToStr( mCurImg+1 ) + "/" + intToStr( mFiles.size() )
 			);
 		}
 	} else {
-		Fon->SetText( "File: " + path + " failed to load. \nReason: " + SOIL_last_result() );
+		Fon->SetText( "File: " + String::FromUtf8( path ) + " failed to load. \nReason: " + SOIL_last_result() );
 	}
 }
 
@@ -432,7 +442,7 @@ Uint32 cApp::LoadImage( const std::string& path, const bool& SetAsCurrent ) {
 
 	TexId = TF->Load( mFilePath + path );
 
-	Con.PushText( "%s loaded in %f ms.", path.c_str(), TE.ElapsedSinceStart() );
+	Con.PushText( String::FromUtf8( path ) + " loaded in " + toStr( TE.ElapsedSinceStart() ) + " ms." );
 
 	if ( SetAsCurrent )
 		SetImage( TexId, path );
@@ -473,7 +483,7 @@ void cApp::UnloadImage( const Uint32& img ) {
 void cApp::OptUpdate() {
 	mImg.CreateStatic( mFiles [ mCurImg ].Tex );
 	mImg.Scale( 1.f );
-	mImg.UpdatePos( 0.0f, 0.0f );
+	mImg.Position( 0.0f, 0.0f );
 	mImg.ScaleCentered(true);
 
 	ScaleToScreen();
@@ -486,7 +496,7 @@ void cApp::OptUpdate() {
 
 		if ( Tex ) {
 			Fon->SetText(
-				"File: " + mFiles [ mCurImg ].Path +
+				"File: " + String::FromUtf8( mFiles [ mCurImg ].Path ) +
 				"\nWidth: " + intToStr( Tex->Width() ) +
 				"\nHeight: " + intToStr( Tex->Height() ) +
 				"\n" + intToStr( mCurImg + 1 ) + "/" + intToStr( mFiles.size() )
@@ -538,45 +548,47 @@ void cApp::Input() {
 	KM->Update();
 	Mouse = KM->GetMousePos();
 
-	if ( KM->IsKeyDown(KEY_TAB) && KM->AltPressed() )
-		EE->MinimizeWindow();
+	if ( KM->IsKeyDown(KEY_TAB) && KM->AltPressed() ) {
+		mWindow->Minimize();
+	}
 
-	if ( KM->IsKeyDown(KEY_ESCAPE) || ( KM->IsKeyDown(KEY_Q) && !Con.Active() ) )
-		EE->Running(false);
+	if ( KM->IsKeyDown(KEY_ESCAPE) || ( KM->IsKeyDown(KEY_Q) && !Con.Active() ) ) {
+		mWindow->Close();
+	}
 
 	if ( ( KM->AltPressed() && KM->IsKeyUp(KEY_RETURN) ) || ( KM->IsKeyUp(KEY_F) && !Con.Active() ) ) {
-		if ( EE->Windowed() )
-			EE->ChangeRes( EE->GetDeskWidth(), EE->GetDeskHeight(), false );
+		if ( mWindow->Windowed() )
+			mWindow->Size( mWindow->GetDesktopResolution().Width(), mWindow->GetDesktopResolution().Height(), false );
 		else
-			EE->ToggleFullscreen();
-
-		RestoreMouse();
+			mWindow->ToggleFullscreen();
 
 		PrepareFrame();
 		ScaleToScreen();
 	}
 
-	if ( KM->IsKeyUp(KEY_F5) )
+	if ( KM->IsKeyUp(KEY_F5) ) {
 		SwitchFade();
+	}
 
-	if ( KM->IsKeyUp(KEY_F3) || KM->IsKeyUp(KEY_WORLD_26) )
+	if ( KM->IsKeyUp(KEY_F3) || KM->IsKeyUp(KEY_WORLD_26) ) {
 		Con.Toggle();
+	}
 
 	if ( ( KM->IsKeyUp(KEY_S) && !Con.Active() ) || KM->IsKeyUp(KEY_F4) ) {
 		mCursor = !mCursor;
-		EE->ShowCursor( mCursor );
-
-		if ( mCursor )
-			RestoreMouse();
+		mWindow->GetCursorManager()->Visible( mCursor );
 	}
 
-	if ( KM->IsKeyUp(KEY_H) && !Con.Active() )
+	if ( KM->IsKeyUp(KEY_H) && !Con.Active() ) {
 		mShowHelp = !mShowHelp;
+	}
 
 	if ( ( ( KM->IsKeyUp(KEY_V) && KM->ControlPressed() ) || ( KM->IsKeyUp(KEY_INSERT) && KM->ShiftPressed() ) ) && !Con.Active() ) {
-		std::string tPath = EE->GetClipboardText();
-		if ( ( tPath.size() && IsImage( tPath ) ) || IsDirectory( tPath ) )
+		std::string tPath = mWindow->GetClipboard()->GetText();
+
+		if ( ( tPath.size() && IsImage( tPath ) ) || IsDirectory( tPath ) ) {
 			LoadDir( tPath );
+		}
 	}
 
 	if ( !Con.Active() ) {
@@ -584,6 +596,7 @@ void cApp::Input() {
 			if ( !mBlockWheelSpeed || eeGetTicks() - mLastWheelUse > mWheelBlockTime ) {
 				mLastWheelUse = eeGetTicks();
 				LoadPrevImage();
+				DisableSlideShow();
 			}
 		}
 
@@ -591,28 +604,37 @@ void cApp::Input() {
 			if ( !mBlockWheelSpeed || eeGetTicks() - mLastWheelUse > mWheelBlockTime ) {
 				mLastWheelUse = eeGetTicks();
 				LoadNextImage();
+				DisableSlideShow();
 			}
 		}
 
-		if ( KM->IsKeyUp(KEY_I) )
+		if ( KM->IsKeyUp(KEY_I) ) {
 			mShowInfo = !mShowInfo;
+		}
 	}
 
 	if ( mFiles.size() && mFiles[ mCurImg ].Tex && !Con.Active() ) {
-		if ( KM->IsKeyUp(KEY_HOME) )
+		if ( KM->IsKeyUp(KEY_HOME) ) {
 			LoadFirstImage();
+			DisableSlideShow();
+		}
 
-		if ( KM->IsKeyUp(KEY_END) )
+		if ( KM->IsKeyUp(KEY_END) ) {
 			LoadLastImage();
+			DisableSlideShow();
+		}
 
-		if ( KM->IsKeyUp(KEY_KP_MULTIPLY) )
+		if ( KM->IsKeyUp(KEY_KP_MULTIPLY) ) {
 			ScaleToScreen();
+		}
 
-		if ( KM->IsKeyUp(KEY_KP_DIVIDE) )
+		if ( KM->IsKeyUp(KEY_KP_DIVIDE) ) {
 			mImg.Scale( 1.f );
+		}
 
-		if ( KM->IsKeyUp(KEY_Z) )
+		if ( KM->IsKeyUp(KEY_Z) ) {
 			ZoomImage();
+		}
 
 		if ( eeGetTicks() - mZoomTicks >= 15 ) {
 			mZoomTicks = eeGetTicks();
@@ -632,27 +654,28 @@ void cApp::Input() {
 		}
 
 		if ( KM->IsKeyDown(KEY_LEFT) ) {
-			mImg.X( ( mImg.X() + ( (EE->Elapsed() * 0.4f) ) ) );
+			mImg.X( ( mImg.X() + ( (mWindow->Elapsed() * 0.4f) ) ) );
 			mImg.X( static_cast<eeFloat> ( static_cast<Int32> ( mImg.X() ) ) );
 		}
 
 		if ( KM->IsKeyDown(KEY_RIGHT) ) {
-			mImg.X( ( mImg.X() + ( -(EE->Elapsed() * 0.4f) ) ) );
+			mImg.X( ( mImg.X() + ( -(mWindow->Elapsed() * 0.4f) ) ) );
 			mImg.X( static_cast<eeFloat> ( static_cast<Int32> ( mImg.X() ) ) );
 		}
 
 		if ( KM->IsKeyDown(KEY_UP) ) {
-			mImg.Y( ( mImg.Y() + ( (EE->Elapsed() * 0.4f) ) ) );
+			mImg.Y( ( mImg.Y() + ( (mWindow->Elapsed() * 0.4f) ) ) );
 			mImg.Y( static_cast<eeFloat> ( static_cast<Int32> ( mImg.Y() ) ) );
 		}
 
 		if ( KM->IsKeyDown(KEY_DOWN) ) {
-			mImg.Y( ( mImg.Y() + ( -(EE->Elapsed() * 0.4f) ) ) );
+			mImg.Y( ( mImg.Y() + ( -(mWindow->Elapsed() * 0.4f) ) ) );
 			mImg.Y( static_cast<eeFloat> ( static_cast<Int32> ( mImg.Y() ) ) );
 		}
 
-		if ( KM->MouseLeftClick() )
+		if ( KM->MouseLeftClick() ) {
 			mMouseLeftPressing = false;
+		}
 
 		if ( KM->MouseLeftPressed() ) {
 			eeVector2f mNewPos;
@@ -673,8 +696,9 @@ void cApp::Input() {
 			}
 		}
 
-		if ( KM->MouseMiddleClick() )
+		if ( KM->MouseMiddleClick() ) {
 			mMouseMiddlePressing = false;
+		}
 
 		if ( KM->MouseMiddlePressed() ) {
 			if ( !mMouseMiddlePressing ) {
@@ -699,8 +723,9 @@ void cApp::Input() {
 			}
 		}
 
-		if ( KM->MouseRightPressed() )
+		if ( KM->MouseRightPressed() ) {
 			mImg.Angle( LineAngle( eeVector2f( Mouse.x, Mouse.y ), eeVector2f( HWidth, HHeight ) ) );
+		}
 
 		if ( KM->IsKeyUp(KEY_X) ) {
 			if ( mImgRT == RN_NORMAL )
@@ -737,17 +762,60 @@ void cApp::Input() {
 			cTexture* Tex = TF->GetTexture( mImg.GetTexture() );
 			if ( Tex ) {
 				if ( Tex->Filter() == TEX_FILTER_LINEAR )
-					Tex->SetTextureFilter( TEX_FILTER_NEAREST );
+					Tex->TextureFilter( TEX_FILTER_NEAREST );
 				else
-					Tex->SetTextureFilter( TEX_FILTER_LINEAR );
+					Tex->TextureFilter( TEX_FILTER_LINEAR );
 			}
 		}
 
-		if ( KM->IsKeyUp(KEY_T) ) {
-			mImg.UpdatePos(0.0f,0.0f);
+		if ( KM->IsKeyUp(KEY_M) ) {
+			mImg.Position( 0.0f,0.0f );
 			mImg.Scale( 1.f );
 			mImg.Angle( 0.f );
 			ScaleToScreen();
+			EE->GetCurrentWindow()->Size( mImg.Width(), mImg.Height() );
+		}
+
+		if ( KM->IsKeyUp(KEY_T) ) {
+			mImg.Position( 0.0f,0.0f );
+			mImg.Scale( 1.f );
+			mImg.Angle( 0.f );
+			ScaleToScreen();
+		}
+
+		if ( KM->IsKeyUp(KEY_E) ) {
+			CreateSlideShow( mSlideTime );
+		}
+
+		if ( KM->IsKeyUp(KEY_D) ) {
+			DisableSlideShow();
+		}
+	}
+}
+
+void cApp::CreateSlideShow( Uint32 time ) {
+	if ( time < 250 )
+		time = 250;
+
+	mSlideShow	= true;
+	mSlideTime	= time;
+	mSlideTicks	= eeGetTicks();
+}
+
+void cApp::DisableSlideShow() {
+	mSlideShow = false;
+}
+
+void cApp::DoSlideShow() {
+	if ( mSlideShow ) {
+		if ( eeGetTicks() - mSlideTicks >= mSlideTime ) {
+			mSlideTicks = eeGetTicks();
+
+			if ( mCurImg + 1 < mFiles.size() ) {
+				LoadNextImage();
+			} else {
+				DisableSlideShow();
+			}
 		}
 	}
 }
@@ -793,8 +861,8 @@ void cApp::ZoomImage() {
 }
 
 void cApp::PrepareFrame() {
-	Width = EE->GetWidth();
-	Height = EE->GetHeight();
+	Width = mWindow->GetWidth();
+	Height = mWindow->GetHeight();
 	HWidth = Width * 0.5f;
 	HHeight = Height * 0.5f;
 
@@ -805,12 +873,14 @@ void cApp::PrepareFrame() {
 		else
 			mInfo = "EEiv";
 
-		EE->SetWindowCaption( mInfo );
+		mWindow->Caption( mInfo );
 	}
 }
 
 void cApp::Render() {
 	PrepareFrame();
+
+	DoSlideShow();
 
 	if ( mFiles.size() && mFiles[ mCurImg ].Tex ) {
 		DoFade();
@@ -871,7 +941,7 @@ void cApp::DoFade() {
 }
 
 void cApp::End() {
-	EE->DestroySingleton();
+	cEngine::DestroySingleton();
 }
 
 void cApp::ResizeTexture( cTexture * pTex, const Uint32& NewWidth, const Uint32& NewHeight, const std::string& SavePath ) {
@@ -916,7 +986,7 @@ void cApp::ScaleImg( const std::string& Path, const eeFloat& Scale ) {
 		if ( !wasLoaded )
 			TF->Remove( pTex->Id() );
 	} else {
-		Con.PushText( L"Images does not exists." );
+		Con.PushText( "Images does not exists." );
 	}
 }
 
@@ -936,7 +1006,7 @@ void cApp::ResizeImg( const std::string& Path, const Uint32& NewWidth, const Uin
 		if ( !wasLoaded )
 			TF->Remove( pTex->Id() );
 	} else {
-		Con.PushText( L"Images does not exists." );
+		Con.PushText( "Images does not exists." );
 	}
 }
 
@@ -953,24 +1023,58 @@ void cApp::BatchDir( const std::string& Path, const eeFloat& Scale ) {
 	}
 }
 
-void cApp::CmdImgResize( const std::vector < std::wstring >& params ) {
-	std::wstring Error( L"Example of use: imgresize new_width new_height path_to_img" );
+void cApp::CmdSlideShow( const std::vector < String >& params ) {
+	String Error( "Example of use: slideshow slide_time_in_ms" );
+	if ( params.size() >= 2 ) {
+		try {
+			Uint32 time = 0;
+
+			bool Res = fromString<Uint32> ( time, params[1] );
+
+			if ( Res ) {
+				if ( !mSlideShow ) {
+					CreateSlideShow( time );
+				} else {
+					if ( 0 == time ) {
+						mSlideShow = false;
+					}
+				}
+			} else {
+				Con.PushText( Error );
+			}
+		} catch (...) {
+			Con.PushText( Error );
+		}
+	} else {
+		Con.PushText( Error );
+	}
+}
+
+void cApp::CmdImgResize( const std::vector < String >& params ) {
+	String Error( "Example of use: imgresize new_width new_height path_to_img" );
 	if ( params.size() >= 3 ) {
 		try {
-			Uint32 nWidth = boost::lexical_cast<Uint32>( wstringTostring( params[1] ) );
-			Uint32 nHeight = boost::lexical_cast<Uint32>( wstringTostring( params[2] ) );
+			Uint32 nWidth = 0;
+			Uint32 nHeight = 0;
+
+			bool Res1 = fromString<Uint32> ( nWidth, params[1] );
+			bool Res2 = fromString<Uint32> ( nHeight, params[2] );
+
 			std::string myPath;
 
 			if ( params.size() >= 4 ) {
-				myPath = wstringTostring( params[3] );
+				myPath = params[3].ToUtf8();
 				if ( params.size() > 4 ) {
 					for ( Uint32 i = 4; i < params.size(); i++ )
-						myPath += " " + wstringTostring( params[i] );
+						myPath += " " + params[i].ToUtf8();
 				}
 			} else
 				myPath = mFilePath + mFile;
 
-			ResizeImg( myPath, nWidth, nHeight );
+			if ( Res1 && Res2 )
+				ResizeImg( myPath, nWidth, nHeight );
+			else
+				Con.PushText( Error );
 		} catch (...) {
 			Con.PushText( Error );
 		}
@@ -979,23 +1083,29 @@ void cApp::CmdImgResize( const std::vector < std::wstring >& params ) {
 	}
 }
 
-void cApp::CmdImgScale( const std::vector < std::wstring >& params ) {
-	std::wstring Error( L"Example of use: imgscale scale path_to_img" );
+void cApp::CmdImgScale( const std::vector < String >& params ) {
+	String Error( "Example of use: imgscale scale path_to_img" );
 	if ( params.size() >= 2 ) {
 		try {
-			eeFloat Scale = boost::lexical_cast<eeFloat>( wstringTostring( params[1] ) );
+			eeFloat Scale = 0;
+
+			bool Res = fromString<eeFloat>( Scale, params[1] );
+
 			std::string myPath;
 
 			if ( params.size() >= 3 ) {
-				myPath = wstringTostring( params[2] );
+				myPath = params[2].ToUtf8();
 				if ( params.size() > 3 ) {
 					for ( Uint32 i = 3; i < params.size(); i++ )
-						myPath += " " + wstringTostring( params[i] );
+						myPath += " " + params[i].ToUtf8();
 				}
 			} else
 				myPath = mFilePath + mFile;
 
-			ScaleImg( myPath, Scale );
+			if ( Res )
+				ScaleImg( myPath, Scale );
+			else
+				Con.PushText( Error );
 		} catch (...) {
 			Con.PushText( Error );
 		}
@@ -1004,22 +1114,27 @@ void cApp::CmdImgScale( const std::vector < std::wstring >& params ) {
 	}
 }
 
-void cApp::CmdBatchImgResize( const std::vector < std::wstring >& params ) {
-	std::wstring Error( L"Example of use: batchimgresize scale_value directory_to_resize_img" );
+void cApp::CmdBatchImgResize( const std::vector < String >& params ) {
+	String Error( "Example of use: batchimgresize scale_value directory_to_resize_img" );
 	if ( params.size() >= 3 ) {
 		try {
-			eeFloat Scale = boost::lexical_cast<eeFloat>( wstringTostring( params[1] ) );
+			eeFloat Scale = 0;
 
-			std::string myPath = wstringTostring( params[2] );
+			bool Res = fromString<eeFloat>( Scale, params[1] );
+
+			std::string myPath = params[2].ToUtf8();
 			if ( params.size() > 3 ) {
 				for ( Uint32 i = 3; i < params.size(); i++ )
-					myPath += " " + wstringTostring( params[i] );
+					myPath += " " + params[i].ToUtf8();
 			}
 
-			if ( IsDirectory( myPath ) ) {
-				BatchDir( myPath, Scale );
+			if ( Res ) {
+				if ( IsDirectory( myPath ) ) {
+					BatchDir( myPath, Scale );
+				} else
+					Con.PushText( "Second argument is not a directory!" );
 			} else
-				Con.PushText( "Second argument is not a directory!" );
+				Con.PushText( Error );
 		} catch (...) {
 			Con.PushText( Error );
 		}
@@ -1030,21 +1145,21 @@ void cApp::CmdBatchImgResize( const std::vector < std::wstring >& params ) {
 	}
 }
 
-void cApp::CmdImgChangeFormat( const std::vector < std::wstring >& params ) {
-	std::wstring Error( L"Example of use: imgchangeformat to_format image_to_reformat ( if null will use the current loaded image )" );
+void cApp::CmdImgChangeFormat( const std::vector < String >& params ) {
+	String Error( "Example of use: imgchangeformat to_format image_to_reformat ( if null will use the current loaded image )" );
 	if ( params.size() >= 2 ) {
 		try {
-			std::string toFormat = wstringTostring( params[1] );
+			std::string toFormat = params[1].ToUtf8();
 			std::string myPath;
 
 			if ( params.size() >= 3 )
-				myPath = wstringTostring( params[2] );
+				myPath = params[2].ToUtf8();
 			else
 				myPath = mFilePath + mFile;
 
 			if ( params.size() > 3 ) {
 				for ( Uint32 i = 4; i < params.size(); i++ )
-					myPath += " " + wstringTostring( params[i] );
+					myPath += " " + params[i].ToUtf8();
 			}
 
 			std::string fromFormat = FileExtension( myPath );
@@ -1095,17 +1210,17 @@ void cApp::CmdImgChangeFormat( const std::vector < std::wstring >& params ) {
 	}
 }
 
-void cApp::CmdBatchImgChangeFormat( const std::vector < std::wstring >& params ) {
-	std::wstring Error( L"Example of use: batchimgchangeformat from_format to_format directory_to_reformat" );
+void cApp::CmdBatchImgChangeFormat( const std::vector < String >& params ) {
+	String Error( "Example of use: batchimgchangeformat from_format to_format directory_to_reformat" );
 	if ( params.size() >= 4 ) {
 		try {
-			std::string fromFormat = wstringTostring( params[1] );
-			std::string toFormat = wstringTostring( params[2] );
+			std::string fromFormat = params[1].ToUtf8();
+			std::string toFormat = params[2].ToUtf8();
 
-			std::string myPath = wstringTostring( params[3] );
+			std::string myPath = params[3].ToUtf8();
 			if ( params.size() > 3 ) {
 				for ( Uint32 i = 4; i < params.size(); i++ )
-					myPath += " " + wstringTostring( params[i] );
+					myPath += " " + params[i].ToUtf8();
 			}
 
 			if ( IsDirectory( myPath ) ) {
@@ -1159,87 +1274,101 @@ void cApp::CmdBatchImgChangeFormat( const std::vector < std::wstring >& params )
 	}
 }
 
-void cApp::CmdMoveTo( const std::vector < std::wstring >& params ) {
+void cApp::CmdMoveTo( const std::vector < String >& params ) {
 	if ( params.size() >= 2 ) {
 		try {
-			Int32 tInt = boost::lexical_cast<Int32>( wstringTostring( params[1] ) );
+			Int32 tInt = 0;
+
+			bool Res = fromString<Int32>( tInt, params[1] );
 
 			if ( tInt )
 				tInt--;
 
-			if ( tInt >= 0 && tInt < (Int32)mFiles.size() ) {
-				Con.PushText( L"moveto: moving to image number " + toWStr(tInt+1) );
+			if ( Res && tInt >= 0 && tInt < (Int32)mFiles.size() ) {
+				Con.PushText( "moveto: moving to image number " + toStr( tInt + 1 ) );
 				FastLoadImage( tInt );
 			} else
-				Con.PushText( L"moveto: image number does not exists" );
+				Con.PushText( "moveto: image number does not exists" );
 
-		} catch (boost::bad_lexical_cast&) {
-			Con.PushText( L"Invalid Parameter. Expected int value from '" + params[1] + L"'." );
+		} catch (...) {
+			Con.PushText( "Invalid Parameter. Expected int value from '" + params[1] + "'." );
 		}
 	} else
-		Con.PushText( L"Expected some parameter" );
+		Con.PushText( "Expected some parameter" );
 }
 
-void cApp::CmdSetBlockWheel( const std::vector < std::wstring >& params ) {
+void cApp::CmdSetBlockWheel( const std::vector < String >& params ) {
 	if ( params.size() >= 2 ) {
 		try {
-			Int32 tInt = boost::lexical_cast<Int32>( wstringTostring( params[1] ) );
-			if ( tInt == 0 || tInt == 1 ) {
+			Int32 tInt = 0;
+
+			bool Res = fromString<Int32>( tInt, params[1] );
+
+			if ( Res && ( tInt == 0 || tInt == 1 ) ) {
 				mBlockWheelSpeed = (bool)tInt;
-				Con.PushText( L"setblockwheel " + toWStr(tInt) );
+				Con.PushText( "setblockwheel " + toStr(tInt) );
 			} else
-				Con.PushText( L"Valid parameters are 0 or 1." );
-		} catch (boost::bad_lexical_cast&) {
-			Con.PushText( L"Invalid Parameter. Expected int value from '" + params[1] + L"'." );
+				Con.PushText( "Valid parameters are 0 or 1." );
+		} catch (...) {
+			Con.PushText( "Invalid Parameter. Expected int value from '" + params[1] + "'." );
 		}
 	} else
-		Con.PushText( L"Expected some parameter" );
+		Con.PushText( "Expected some parameter" );
 }
 
-void cApp::CmdSetLateLoading( const std::vector < std::wstring >& params ) {
+void cApp::CmdSetLateLoading( const std::vector < String >& params ) {
 	if ( params.size() >= 2 ) {
 		try {
-			Int32 tInt = boost::lexical_cast<Int32>( wstringTostring( params[1] ) );
-			if ( tInt == 0 || tInt == 1 ) {
+			Int32 tInt = 0;
+
+			bool Res = fromString<Int32>( tInt, params[1] );
+
+			if ( Res && ( tInt == 0 || tInt == 1 ) ) {
 				mLateLoading = (bool)tInt;
-				Con.PushText( L"setlateloading " + toWStr(tInt) );
+				Con.PushText( "setlateloading " + toStr(tInt) );
 			} else
-				Con.PushText( L"Valid parameters are 0 or 1." );
-		} catch (boost::bad_lexical_cast&) {
-			Con.PushText( L"Invalid Parameter. Expected int value from '" + params[1] + L"'." );
+				Con.PushText( "Valid parameters are 0 or 1." );
+		} catch (...) {
+			Con.PushText( "Invalid Parameter. Expected int value from '" + params[1] + "'." );
 		}
 	} else
-		Con.PushText( L"Expected some parameter" );
+		Con.PushText( "Expected some parameter" );
 }
 
-void cApp::CmdSetImgFade( const std::vector < std::wstring >& params ) {
+void cApp::CmdSetImgFade( const std::vector < String >& params ) {
 	if ( params.size() >= 2 ) {
 		try {
-			Int32 tInt = boost::lexical_cast<Int32>( wstringTostring( params[1] ) );
-			if ( tInt == 0 || tInt == 1 ) {
+			Int32 tInt = 0;
+
+			bool Res = fromString<Int32>( tInt, params[1] );
+
+			if ( Res && ( tInt == 0 || tInt == 1 ) ) {
 				mFade = (bool)tInt;
-				Con.PushText( L"setimgfade " + toWStr(tInt) );
+				Con.PushText( "setimgfade " + toStr(tInt) );
 			} else
-				Con.PushText( L"Valid parameters are 0 or 1." );
-		} catch (boost::bad_lexical_cast&) {
-			Con.PushText( L"Invalid Parameter. Expected int value from '" + params[1] + L"'." );
+				Con.PushText( "Valid parameters are 0 or 1." );
+		} catch (...) {
+			Con.PushText( "Invalid Parameter. Expected int value from '" + params[1] + "'." );
 		}
 	} else
-		Con.PushText( L"Expected some parameter" );
+		Con.PushText( "Expected some parameter" );
 }
 
-void cApp::CmdSetBackColor( const std::vector < std::wstring >& params ) {
-	std::wstring Error( L"Example of use: setbackcolor 255 255 255 (RGB Color, numbers between 0 and 255)" );
+void cApp::CmdSetBackColor( const std::vector < String >& params ) {
+	String Error( "Example of use: setbackcolor 255 255 255 (RGB Color, numbers between 0 and 255)" );
 	if ( params.size() >= 2 ) {
 		try {
 			if ( params.size() == 4 ) {
-				Int32 R = boost::lexical_cast<Int32>( wstringTostring( params[1] ) );
-				Int32 G = boost::lexical_cast<Int32>( wstringTostring( params[2] ) );
-				Int32 B = boost::lexical_cast<Int32>( wstringTostring( params[3] ) );
+				Int32 R = 0;
+				bool Res1 = fromString<Int32>( R, params[1] );
+				Int32 G = 0;
+				bool Res2 = fromString<Int32>( G, params[2] );
+				Int32 B = 0;
+				bool Res3 = fromString<Int32>( B, params[3] );
 
-				if ( ( R <= 255 && R >= 0 ) && ( G <= 255 && G >= 0 ) && ( B <= 255 && B >= 0 ) ) {
-					EE->SetBackColor( eeColor( R,G,B ) );
-					Con.PushText( L"setbackcolor applied" );
+				if ( Res1 && Res2 && Res3 && ( R <= 255 && R >= 0 ) && ( G <= 255 && G >= 0 ) && ( B <= 255 && B >= 0 ) ) {
+					mWindow->BackColor( eeColor( R,G,B ) );
+					Con.PushText( "setbackcolor applied" );
 					return;
 				}
 			}
@@ -1250,27 +1379,27 @@ void cApp::CmdSetBackColor( const std::vector < std::wstring >& params ) {
 	}
 }
 
-void cApp::CmdLoadImg( const std::vector < std::wstring >& params ) {
+void cApp::CmdLoadImg( const std::vector < String >& params ) {
 	if ( params.size() >= 2 ) {
 		try {
-			std::string myPath = wstringTostring( params[1] );
+			std::string myPath = params[1].ToUtf8();
 			if ( IsImage( myPath ) ) {
 				LoadDir( myPath );
 			} else
 				Con.PushText( "\"" + myPath + "\" is not an image path or the image is not supported." );
 		} catch (...) {
-			Con.PushText( L"Something goes wrong!!" );
+			Con.PushText( "Something goes wrong!!" );
 		}
 	}
 }
 
-void cApp::CmdLoadDir( const std::vector < std::wstring >& params ) {
+void cApp::CmdLoadDir( const std::vector < String >& params ) {
 	if ( params.size() >= 2 ) {
 		try {
-			std::string myPath = wstringTostring( params[1] );
+			std::string myPath = params[1].ToUtf8();
 			if ( params.size() > 2 ) {
 				for ( Uint32 i = 2; i < params.size(); i++ )
-					myPath += " " + wstringTostring( params[i] );
+					myPath += " " + params[i].ToUtf8();
 			}
 
 			if ( IsDirectory( myPath ) ) {
@@ -1278,7 +1407,7 @@ void cApp::CmdLoadDir( const std::vector < std::wstring >& params ) {
 			} else
 				Con.PushText( "If you want to load an image use loadimg. \"" + myPath + "\" is not a directory path." );
 		} catch (...) {
-			Con.PushText( L"Something goes wrong!!" );
+			Con.PushText( "Something goes wrong!!" );
 		}
 	}
 }
@@ -1288,30 +1417,35 @@ void cApp::PrintHelp() {
 		Uint32 Top = 6;
 		Uint32 Left = 6;
 
-		std::wstring prevText = Fon->GetText();
+		if ( NULL == mHelpCache ) {
+			String HT = "Keys List:\n";
+			HT += "Escape: Quit from EEiv\n";
+			HT += "ALT + RETURN or F: Toogle Fullscreen - Windowed\n";
+			HT += String::FromUtf8( "F3 or º: Toggle Console\n" );
+			HT += "F4 or S: Show/Hide Cursor\n";
+			HT += "Mouse Wheel Up or PageUp: Go to Previous Image\n";
+			HT += "Mouse Wheel Down or PageDown: Go to Next Image\n";
+			HT += "Key I: Show/Hide Image Info\n";
+			HT += "Key *: Scale image to screen\n";
+			HT += "Key /: Reset Scale to 1\n";
+			HT += "Key Z: Fit Image to Screen\n";
+			HT += "Key + and -, or mouse middle press up or down: Zoom in and Zoom out image\n";
+			HT += "Key X: Flip Image\n";
+			HT += "Key C: Mirror Image\n";
+			HT += "Key R: Rotate 90º Image and scale it to screen\n";
+			HT += "Key T: Reset the position and the scale of the image\n";
+			HT += "Key A: Change the texture filter\n";
+			HT += "Key M: Change the screen size to the size of the current image.\n";
+			HT += "Key E: Play SlideShow\n";
+			HT += "Key D: Pause/Disable SlideShow\n";
+			HT += "Key Left - Right - Top - Down or left mouse press: Move the image\n";
+			HT += "Key F12: Take a screenshot\n";
+			HT += "Key HOME: Go to the first screenshot on the folder\n";
+			HT += "Key END: Go to the last screenshot on the folder";
 
-		Fon->Draw( L"Keys List: ", Left, Height - Top - Fon->GetFontSize() * 22 );
-		Fon->Draw( L"Escape: Quit from EEiv", Left, Height - Top - Fon->GetFontSize() * 1 );
-		Fon->Draw( L"ALT + RETURN or F: Toogle Fullscreen - Windowed", Left, Height - Top - Fon->GetFontSize() * 2 );
-		Fon->Draw( L"F3 or º: Toggle Console", Left, Height - Top - Fon->GetFontSize() * 3 );
-		Fon->Draw( L"F4 or S: Show/Hide Cursor", Left, Height - Top - Fon->GetFontSize() * 4 );
-		Fon->Draw( L"Mouse Wheel Up or PageUp: Go to Previous Image", Left, Height - Top - Fon->GetFontSize() * 5 );
-		Fon->Draw( L"Mouse Wheel Down or PageDown: Go to Next Image", Left, Height - Top - Fon->GetFontSize() * 6 );
-		Fon->Draw( L"Key I: Show/Hide Image Info", Left, Height - Top - Fon->GetFontSize() * 7 );
-		Fon->Draw( L"Key *: Scale image to screen", Left, Height - Top - Fon->GetFontSize() * 8 );
-		Fon->Draw( L"Key /: Reset Scale to 1", Left, Height - Top - Fon->GetFontSize() * 9);
-		Fon->Draw( L"Key Z: Fit Image to Screen", Left, Height - Top - Fon->GetFontSize() * 10 );
-		Fon->Draw( L"Key + and -, or mouse middle press up or down: Zoom in and Zoom out image", Left, Height - Top - Fon->GetFontSize() * 11 );
-		Fon->Draw( L"Key X: Flip Image", Left, Height - Top - Fon->GetFontSize() * 12 );
-		Fon->Draw( L"Key C: Mirror Image", Left, Height - Top - Fon->GetFontSize() * 13 );
-		Fon->Draw( L"Key R: Rotate 90º Image and scale it to screen", Left, Height - Top - Fon->GetFontSize() * 14 );
-		Fon->Draw( L"Key T: Reset the position and the scale of the image", Left, Height - Top - Fon->GetFontSize() * 15 );
-		Fon->Draw( L"Key A: Change the texture filter", Left, Height - Top - Fon->GetFontSize() * 16 );
-		Fon->Draw( L"Key Left - Right - Top - Down or left mouse press: Move the image", Left, Height - Top - Fon->GetFontSize() * 17 );
-		Fon->Draw( L"Key F12: Take a screenshot", Left, Height - Top - Fon->GetFontSize() * 18 );
-		Fon->Draw( L"Key HOME: Go to the first screenshot on the folder", Left, Height - Top - Fon->GetFontSize() * 19 );
-		Fon->Draw( L"Key END: Go to the last screenshot on the folder", Left, Height - Top - Fon->GetFontSize() * 20 );
+			mHelpCache = eeNew( cTextCache, ( Fon, HT ) );
+		}
 
-		Fon->SetText( prevText );
+		mHelpCache->Draw( Left, Height - Top - mHelpCache->GetTextHeight() );
 	}
 }

@@ -43,32 +43,37 @@ class cApp {
 		void ResizeImg( const std::string& Path, const Uint32& NewWidth, const Uint32& NewHeight );
 		void ResizeTexture( cTexture * pTex, const Uint32& NewWidth, const Uint32& NewHeight, const std::string& SavePath );
 		void SwitchFade();
+		void DoSlideShow();
+		void CreateSlideShow( Uint32 time );
+		void DisableSlideShow();
 
-		void CmdLoadDir( const std::vector < std::wstring >& params );
-		void CmdLoadImg( const std::vector < std::wstring >& params );
-		void CmdSetBackColor( const std::vector < std::wstring >& params );
-		void CmdSetImgFade( const std::vector < std::wstring >& params );
-		void CmdSetLateLoading( const std::vector < std::wstring >& params );
-		void CmdSetBlockWheel( const std::vector < std::wstring >& params );
-		void CmdMoveTo( const std::vector < std::wstring >& params );
-		void CmdBatchImgResize( const std::vector < std::wstring >& params );
-		void CmdBatchImgChangeFormat( const std::vector < std::wstring >& params );
-		void CmdImgChangeFormat( const std::vector < std::wstring >& params );
-		void CmdImgResize( const std::vector < std::wstring >& params );
-		void CmdImgScale( const std::vector < std::wstring >& params );
+		void CmdLoadDir( const std::vector < String >& params );
+		void CmdLoadImg( const std::vector < String >& params );
+		void CmdSetBackColor( const std::vector < String >& params );
+		void CmdSetImgFade( const std::vector < String >& params );
+		void CmdSetLateLoading( const std::vector < String >& params );
+		void CmdSetBlockWheel( const std::vector < String >& params );
+		void CmdMoveTo( const std::vector < String >& params );
+		void CmdBatchImgResize( const std::vector < String >& params );
+		void CmdBatchImgChangeFormat( const std::vector < String >& params );
+		void CmdImgChangeFormat( const std::vector < String >& params );
+		void CmdImgResize( const std::vector < String >& params );
+		void CmdImgScale( const std::vector < String >& params );
+		void CmdSlideShow( const std::vector < String >& params );
 
-		cEngine* EE;
-		cTextureFactory* TF;
-		cLog* Log;
-		cInput* KM;
+		cEngine * EE;
+		cTextureFactory * TF;
+		cWindow * mWindow;
+		cLog * Log;
+		cInput * KM;
 
 		std::string MyPath;
 
-		cFont *Fon; //! Default App Font
-		cFont *Mon; //! Console App Font
+		cFont * Fon; //! Default App Font
+		cFont * Mon; //! Console App Font
 
-		cTTFFont *TTF, *TTFMon;
-		cTextureFont *TexF, *TexFMon;
+		cTTFFont * TTF, * TTFMon;
+		cTextureFont * TexF, * TexFMon;
 
 		cConsole Con; //! Console Instance
 
@@ -151,6 +156,12 @@ class cApp {
 		bool mUsedTempDir;
 
 		cTimeElapsed TE;
+
+		cTextCache * mHelpCache;
+
+		bool	mSlideShow;
+		Uint32	mSlideTime;
+		Uint32	mSlideTicks;
 };
 
 #endif
