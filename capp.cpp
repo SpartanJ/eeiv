@@ -189,8 +189,8 @@ bool cApp::Init() {
 			TTF 	= eeNew( cTTFFont, ( "DejaVuSans" ) );
 			TTFMon 	= eeNew( cTTFFont, ( "DejaVuSansMono" ) );
 
-			#if EE_PLATFORM == EE_PLATFORM_WIN32
-			std::string WinPath = GetWindowsPath() + "\\Fonts\\";
+			#if EE_PLATFORM == EE_PLATFORM_WIN
+			std::string WinPath( GetWindowsPath() + "\\Fonts\\" );
 			if ( FileExists( WinPath + "DejaVuSans.ttf" ) && FileExists( WinPath + "DejaVuSansMono.ttf" ) ) {
 				TTF->Load( WinPath + "DejaVuSans.ttf", 12, EE_TTF_STYLE_NORMAL, false, 512, eeColor(), 1, eeColor(0,0,0) );
 				TTFMon->Load( WinPath + "DejaVuSansMono.ttf", 12, EE_TTF_STYLE_NORMAL, false, 512, eeColor(), 1, eeColor(0,0,0) );
@@ -295,7 +295,7 @@ void cApp::LoadDir( const std::string& path, const bool& getimages ) {
 			#if defined( EE_PLATFORM_POSIX )
 				std::string cmd = "wget -q -P \"" + mTmpPath + "\" \"" + path + "\"";
 				system( cmd.c_str() );
-			#elif EE_PLATFORM == EE_PLATFORM_WIN32
+			#elif EE_PLATFORM == EE_PLATFORM_WIN
 				return;
 			#endif
 
@@ -312,7 +312,7 @@ void cApp::LoadDir( const std::string& path, const bool& getimages ) {
 		} while ( res != std::string::npos );
 
 		if ( mFilePath == "" ) {
-			#if EE_PLATFORM == EE_PLATFORM_WIN32
+			#if EE_PLATFORM == EE_PLATFORM_WIN
 				mFilePath = "C:\\";
 			#else
 				mFilePath = GetOSlash();
@@ -409,7 +409,7 @@ void cApp::SetImage( const Uint32& Tex, const std::string& path ) {
 
 		mImg.CreateStatic( Tex );
 		mImg.ScaleCentered(true);
-		mImg.SetRenderType( mImgRT );
+		mImg.RenderType( mImgRT );
 		mImg.Scale( 1.f );
 		mImg.Position( 0.0f, 0.0f );
 
@@ -431,7 +431,7 @@ void cApp::SetImage( const Uint32& Tex, const std::string& path ) {
 			);
 		}
 	} else {
-		Fon->SetText( "File: " + String::FromUtf8( path ) + " failed to load. \nReason: " + SOIL_last_result() );
+		Fon->SetText( "File: " + String::FromUtf8( path ) + " failed to load. \nReason: " + stbi_failure_reason() );
 	}
 }
 
@@ -737,7 +737,7 @@ void cApp::Input() {
 			else
 				mImgRT = RN_NORMAL;
 
-			mImg.SetRenderType( mImgRT );
+			mImg.RenderType( mImgRT );
 		}
 
 		if ( KM->IsKeyUp(KEY_C) ) {
@@ -750,7 +750,7 @@ void cApp::Input() {
 			else
 				mImgRT = RN_NORMAL;
 
-			mImg.SetRenderType( mImgRT );
+			mImg.RenderType( mImgRT );
 		}
 
 		if ( KM->IsKeyUp(KEY_R) ) {
@@ -759,7 +759,8 @@ void cApp::Input() {
 		}
 
 		if ( KM->IsKeyUp(KEY_A) ) {
-			cTexture* Tex = TF->GetTexture( mImg.GetTexture() );
+			cTexture * Tex = mImg.GetCurrentShape()->GetTexture();
+
 			if ( Tex ) {
 				if ( Tex->Filter() == TEX_FILTER_LINEAR )
 					Tex->TextureFilter( TEX_FILTER_NEAREST );
@@ -811,7 +812,7 @@ void cApp::DoSlideShow() {
 		if ( eeGetTicks() - mSlideTicks >= mSlideTime ) {
 			mSlideTicks = eeGetTicks();
 
-			if ( mCurImg + 1 < mFiles.size() ) {
+			if ( (Uint32)( mCurImg + 1 ) < mFiles.size() ) {
 				LoadNextImage();
 			} else {
 				DisableSlideShow();
@@ -885,7 +886,7 @@ void cApp::Render() {
 	if ( mFiles.size() && mFiles[ mCurImg ].Tex ) {
 		DoFade();
 
-		cTexture* Tex = TF->GetTexture( mImg.GetTexture() );
+		cTexture * Tex = mImg.GetCurrentShape()->GetTexture();
 
 		if ( Tex ) {
 			eeFloat X = static_cast<eeFloat> ( static_cast<Int32> ( HWidth - mImg.Width() * 0.5f ) );
@@ -926,9 +927,9 @@ void cApp::DoFade() {
 			mFading = false;
 		}
 
-		cTexture* Tex = TF->GetTexture( mOldImg.GetTexture() );
+		cTexture * Tex = NULL;
 
-		if ( Tex ) {
+		if ( NULL != mOldImg.GetCurrentShape() && ( Tex = mOldImg.GetCurrentShape()->GetTexture() ) ) {
 			eeFloat X = static_cast<eeFloat> ( static_cast<Int32> ( HWidth - mOldImg.Width() * 0.5f ) );
 			eeFloat Y = static_cast<eeFloat> ( static_cast<Int32> ( HHeight - mOldImg.Height() * 0.5f ) );
 
