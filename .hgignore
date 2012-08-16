@@ -1,0 +1,4 @@
+syntax: glob
+obj/**
+eeiv-debug
+eeiv-release

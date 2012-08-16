@@ -1,7 +1,7 @@
 #ifndef CAPP_H
 #define CAPP_H
 
-#include "../ee.h"
+#include <eepp/ee.hpp>
 
 class cApp {
 	public:

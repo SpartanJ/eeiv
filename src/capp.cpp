@@ -1,7 +1,6 @@
 #include "capp.hpp"
 
-#include "../helper/SOIL/image_helper.h"
-#include "../helper/SOIL/stb_image.h"
+#include <eepp/helper/SOIL/image_helper.h>
 
 #if EE_PLATFORM == EE_PLATFORM_WIN
 static std::string GetWindowsPath() {
@@ -33,7 +32,7 @@ static bool IsImage( const std::string& path ) {
 		else {
 			int x,y,c;
 
-			int res = stbi_info( path.c_str(), &x, &y, &c );
+			int res = stbi_info( mPath.c_str(), &x, &y, &c );
 
 			if ( res )
 				return true;
@@ -154,7 +153,7 @@ bool cApp::Init() {
 	if ( mConfig.UseDesktopResolution )
 		Style |= WindowStyle::UseDesktopResolution;
 
-	mWindow = EE->CreateWindow( WindowSettings( mConfig.Width, mConfig.Height, mConfig.BitColor, Style, MyPath + "fonts/" + "eeiv.png" ), ContextSettings( mConfig.VSync, GLv_default, mConfig.DoubleBuffering ) );
+	mWindow = EE->CreateWindow( WindowSettings( mConfig.Width, mConfig.Height, mConfig.BitColor, Style, MyPath + "fonts/" + "eeiv.png" ), ContextSettings( mConfig.VSync, GLv_default, mConfig.DoubleBuffering, 0, 0 ) );
 
 	if ( mWindow->Created() ) {
 		mFade = mConfig.Fade;
@@ -425,9 +424,9 @@ void cApp::SetImage( const Uint32& Tex, const std::string& path ) {
 		if ( NULL != pTex ) {
 			Fon->SetText(
 				"File: " + String::FromUtf8( mFile ) +
-				"\nWidth: " + intToStr( pTex->Width() ) +
-				"\nHeight: " + intToStr( pTex->Height() ) +
-				"\n" + intToStr( mCurImg+1 ) + "/" + intToStr( mFiles.size() )
+				"\nWidth: " + toStr( pTex->Width() ) +
+				"\nHeight: " + toStr( pTex->Height() ) +
+				"\n" + toStr( mCurImg+1 ) + "/" + toStr( mFiles.size() )
 			);
 		}
 	} else {
@@ -497,9 +496,9 @@ void cApp::OptUpdate() {
 		if ( Tex ) {
 			Fon->SetText(
 				"File: " + String::FromUtf8( mFiles [ mCurImg ].Path ) +
-				"\nWidth: " + intToStr( Tex->Width() ) +
-				"\nHeight: " + intToStr( Tex->Height() ) +
-				"\n" + intToStr( mCurImg + 1 ) + "/" + intToStr( mFiles.size() )
+				"\nWidth: " + toStr( Tex->Width() ) +
+				"\nHeight: " + toStr( Tex->Height() ) +
+				"\n" + toStr( mCurImg + 1 ) + "/" + toStr( mFiles.size() )
 			);
 		}
 	} else
@@ -634,6 +633,12 @@ void cApp::Input() {
 
 		if ( KM->IsKeyUp(KEY_Z) ) {
 			ZoomImage();
+		}
+
+		if ( KM->IsKeyUp( KEY_N ) ) {
+			if ( mWindow->Size().Width() != (Int32)mImg.Width() || mWindow->Size().Height() != (Int32)mImg.Height() ) {
+				mWindow->Size( mImg.Width(), mImg.Height() );
+			}
 		}
 
 		if ( eeGetTicks() - mZoomTicks >= 15 ) {
@@ -892,8 +897,8 @@ void cApp::Render() {
 			eeFloat X = static_cast<eeFloat> ( static_cast<Int32> ( HWidth - mImg.Width() * 0.5f ) );
 			eeFloat Y = static_cast<eeFloat> ( static_cast<Int32> ( HHeight - mImg.Height() * 0.5f ) );
 
-			mImg.OffSetX( X );
-			mImg.OffSetY( Y );
+			mImg.OffsetX( X );
+			mImg.OffsetY( Y );
 			mImg.Alpha( mCurAlpha );
 			mImg.Draw();
 		}
@@ -933,8 +938,8 @@ void cApp::DoFade() {
 			eeFloat X = static_cast<eeFloat> ( static_cast<Int32> ( HWidth - mOldImg.Width() * 0.5f ) );
 			eeFloat Y = static_cast<eeFloat> ( static_cast<Int32> ( HHeight - mOldImg.Height() * 0.5f ) );
 
-			mOldImg.OffSetX( X );
-			mOldImg.OffSetY( Y );
+			mOldImg.OffsetX( X );
+			mOldImg.OffsetY( Y );
 			mOldImg.Alpha( 255 - mCurAlpha );
 			mOldImg.Draw();
 		}
@@ -1026,24 +1031,21 @@ void cApp::BatchDir( const std::string& Path, const eeFloat& Scale ) {
 
 void cApp::CmdSlideShow( const std::vector < String >& params ) {
 	String Error( "Example of use: slideshow slide_time_in_ms" );
+
 	if ( params.size() >= 2 ) {
-		try {
-			Uint32 time = 0;
+		Uint32 time = 0;
 
-			bool Res = fromString<Uint32> ( time, params[1] );
+		bool Res = fromString<Uint32> ( time, params[1] );
 
-			if ( Res ) {
-				if ( !mSlideShow ) {
-					CreateSlideShow( time );
-				} else {
-					if ( 0 == time ) {
-						mSlideShow = false;
-					}
-				}
+		if ( Res ) {
+			if ( !mSlideShow ) {
+				CreateSlideShow( time );
 			} else {
-				Con.PushText( Error );
+				if ( 0 == time ) {
+					mSlideShow = false;
+				}
 			}
-		} catch (...) {
+		} else {
 			Con.PushText( Error );
 		}
 	} else {
@@ -1054,31 +1056,27 @@ void cApp::CmdSlideShow( const std::vector < String >& params ) {
 void cApp::CmdImgResize( const std::vector < String >& params ) {
 	String Error( "Example of use: imgresize new_width new_height path_to_img" );
 	if ( params.size() >= 3 ) {
-		try {
-			Uint32 nWidth = 0;
-			Uint32 nHeight = 0;
+		Uint32 nWidth = 0;
+		Uint32 nHeight = 0;
 
-			bool Res1 = fromString<Uint32> ( nWidth, params[1] );
-			bool Res2 = fromString<Uint32> ( nHeight, params[2] );
+		bool Res1 = fromString<Uint32> ( nWidth, params[1] );
+		bool Res2 = fromString<Uint32> ( nHeight, params[2] );
 
-			std::string myPath;
+		std::string myPath;
 
-			if ( params.size() >= 4 ) {
-				myPath = params[3].ToUtf8();
-				if ( params.size() > 4 ) {
-					for ( Uint32 i = 4; i < params.size(); i++ )
-						myPath += " " + params[i].ToUtf8();
-				}
-			} else
-				myPath = mFilePath + mFile;
+		if ( params.size() >= 4 ) {
+			myPath = params[3].ToUtf8();
+			if ( params.size() > 4 ) {
+				for ( Uint32 i = 4; i < params.size(); i++ )
+					myPath += " " + params[i].ToUtf8();
+			}
+		} else
+			myPath = mFilePath + mFile;
 
-			if ( Res1 && Res2 )
-				ResizeImg( myPath, nWidth, nHeight );
-			else
-				Con.PushText( Error );
-		} catch (...) {
+		if ( Res1 && Res2 )
+			ResizeImg( myPath, nWidth, nHeight );
+		else
 			Con.PushText( Error );
-		}
 	} else {
 		Con.PushText( Error );
 	}
@@ -1087,29 +1085,25 @@ void cApp::CmdImgResize( const std::vector < String >& params ) {
 void cApp::CmdImgScale( const std::vector < String >& params ) {
 	String Error( "Example of use: imgscale scale path_to_img" );
 	if ( params.size() >= 2 ) {
-		try {
-			eeFloat Scale = 0;
+		eeFloat Scale = 0;
 
-			bool Res = fromString<eeFloat>( Scale, params[1] );
+		bool Res = fromString<eeFloat>( Scale, params[1] );
 
-			std::string myPath;
+		std::string myPath;
 
-			if ( params.size() >= 3 ) {
-				myPath = params[2].ToUtf8();
-				if ( params.size() > 3 ) {
-					for ( Uint32 i = 3; i < params.size(); i++ )
-						myPath += " " + params[i].ToUtf8();
-				}
-			} else
-				myPath = mFilePath + mFile;
+		if ( params.size() >= 3 ) {
+			myPath = params[2].ToUtf8();
+			if ( params.size() > 3 ) {
+				for ( Uint32 i = 3; i < params.size(); i++ )
+					myPath += " " + params[i].ToUtf8();
+			}
+		} else
+			myPath = mFilePath + mFile;
 
-			if ( Res )
-				ScaleImg( myPath, Scale );
-			else
-				Con.PushText( Error );
-		} catch (...) {
+		if ( Res )
+			ScaleImg( myPath, Scale );
+		else
 			Con.PushText( Error );
-		}
 	} else {
 		Con.PushText( Error );
 	}
@@ -1118,27 +1112,23 @@ void cApp::CmdImgScale( const std::vector < String >& params ) {
 void cApp::CmdBatchImgResize( const std::vector < String >& params ) {
 	String Error( "Example of use: batchimgresize scale_value directory_to_resize_img" );
 	if ( params.size() >= 3 ) {
-		try {
-			eeFloat Scale = 0;
+		eeFloat Scale = 0;
 
-			bool Res = fromString<eeFloat>( Scale, params[1] );
+		bool Res = fromString<eeFloat>( Scale, params[1] );
 
-			std::string myPath = params[2].ToUtf8();
-			if ( params.size() > 3 ) {
-				for ( Uint32 i = 3; i < params.size(); i++ )
-					myPath += " " + params[i].ToUtf8();
-			}
-
-			if ( Res ) {
-				if ( IsDirectory( myPath ) ) {
-					BatchDir( myPath, Scale );
-				} else
-					Con.PushText( "Second argument is not a directory!" );
-			} else
-				Con.PushText( Error );
-		} catch (...) {
-			Con.PushText( Error );
+		std::string myPath = params[2].ToUtf8();
+		if ( params.size() > 3 ) {
+			for ( Uint32 i = 3; i < params.size(); i++ )
+				myPath += " " + params[i].ToUtf8();
 		}
+
+		if ( Res ) {
+			if ( IsDirectory( myPath ) ) {
+				BatchDir( myPath, Scale );
+			} else
+				Con.PushText( "Second argument is not a directory!" );
+		} else
+			Con.PushText( Error );
 	}
 	else
 	{
@@ -1149,26 +1139,84 @@ void cApp::CmdBatchImgResize( const std::vector < String >& params ) {
 void cApp::CmdImgChangeFormat( const std::vector < String >& params ) {
 	String Error( "Example of use: imgchangeformat to_format image_to_reformat ( if null will use the current loaded image )" );
 	if ( params.size() >= 2 ) {
-		try {
-			std::string toFormat = params[1].ToUtf8();
-			std::string myPath;
+		std::string toFormat = params[1].ToUtf8();
+		std::string myPath;
 
-			if ( params.size() >= 3 )
-				myPath = params[2].ToUtf8();
-			else
-				myPath = mFilePath + mFile;
+		if ( params.size() >= 3 )
+			myPath = params[2].ToUtf8();
+		else
+			myPath = mFilePath + mFile;
 
-			if ( params.size() > 3 ) {
-				for ( Uint32 i = 4; i < params.size(); i++ )
-					myPath += " " + params[i].ToUtf8();
+		if ( params.size() > 3 ) {
+			for ( Uint32 i = 4; i < params.size(); i++ )
+				myPath += " " + params[i].ToUtf8();
+		}
+
+		std::string fromFormat = FileExtension( myPath );
+
+		Int32 x, y, c;
+
+		if ( stbi_info( myPath.c_str(), &x, &y, &c ) ) {
+			std::string fPath 	= myPath;
+			std::string fExt	= FileExtension( fPath );
+
+			if ( IsImage( fPath ) && fExt == fromFormat ) {
+				std::string fName;
+
+				if ( fExt != toFormat )
+					fName = fPath.substr( 0, fPath.find_last_of(".") + 1 ) + toFormat;
+				else
+					fName = fPath + "." + toFormat;
+
+				int saveType = -1;
+
+				if ( toFormat == "tga" )
+					saveType = SOIL_SAVE_TYPE_TGA;
+				else if ( toFormat == "bmp" )
+					saveType = SOIL_SAVE_TYPE_BMP;
+				else if ( toFormat == "png" )
+					saveType = SOIL_SAVE_TYPE_PNG;
+				else if ( toFormat == "dds" )
+					saveType = SOIL_SAVE_TYPE_DDS;
+
+				if ( -1 != saveType ) {
+					int w, h, c;
+					unsigned char * img = SOIL_load_image( fPath.c_str(), &w, &h, &c, SOIL_LOAD_AUTO );
+					SOIL_save_image( fName.c_str(), saveType, w, h, c, reinterpret_cast<const unsigned char*>( img ) );
+					SOIL_free_image_data( img );
+
+					Con.PushText( fName + " created." );
+				}
 			}
+		} else
+			Con.PushText( "Third argument is not a directory! Argument: " + myPath );
+	}
+	else
+	{
+		Con.PushText( Error );
+	}
+}
 
-			std::string fromFormat = FileExtension( myPath );
+void cApp::CmdBatchImgChangeFormat( const std::vector < String >& params ) {
+	String Error( "Example of use: batchimgchangeformat from_format to_format directory_to_reformat" );
+	if ( params.size() >= 4 ) {
+		std::string fromFormat = params[1].ToUtf8();
+		std::string toFormat = params[2].ToUtf8();
 
-			Int32 x, y, c;
+		std::string myPath = params[3].ToUtf8();
+		if ( params.size() > 3 ) {
+			for ( Uint32 i = 4; i < params.size(); i++ )
+				myPath += " " + params[i].ToUtf8();
+		}
 
-			if ( stbi_info( myPath.c_str(), &x, &y, &c ) ) {
-				std::string fPath 	= myPath;
+		if ( IsDirectory( myPath ) ) {
+			std::vector<std::string> tmpFiles = FilesGetInPath( myPath );
+
+			if ( myPath[ myPath.size() - 1 ] != '/' )
+				myPath += "/";
+
+			for ( Int32 i = 0; i < (Int32)tmpFiles.size(); i++ ) {
+				std::string fPath 	= myPath + tmpFiles[i];
 				std::string fExt	= FileExtension( fPath );
 
 				if ( IsImage( fPath ) && fExt == fromFormat ) {
@@ -1199,75 +1247,9 @@ void cApp::CmdImgChangeFormat( const std::vector < String >& params ) {
 						Con.PushText( fName + " created." );
 					}
 				}
-			} else
-				Con.PushText( "Third argument is not a directory! Argument: " + myPath );
-		} catch (...) {
-			Con.PushText( Error );
-		}
-	}
-	else
-	{
-		Con.PushText( Error );
-	}
-}
-
-void cApp::CmdBatchImgChangeFormat( const std::vector < String >& params ) {
-	String Error( "Example of use: batchimgchangeformat from_format to_format directory_to_reformat" );
-	if ( params.size() >= 4 ) {
-		try {
-			std::string fromFormat = params[1].ToUtf8();
-			std::string toFormat = params[2].ToUtf8();
-
-			std::string myPath = params[3].ToUtf8();
-			if ( params.size() > 3 ) {
-				for ( Uint32 i = 4; i < params.size(); i++ )
-					myPath += " " + params[i].ToUtf8();
 			}
-
-			if ( IsDirectory( myPath ) ) {
-				std::vector<std::string> tmpFiles = FilesGetInPath( myPath );
-
-				if ( myPath[ myPath.size() - 1 ] != '/' )
-					myPath += "/";
-
-				for ( Int32 i = 0; i < (Int32)tmpFiles.size(); i++ ) {
-					std::string fPath 	= myPath + tmpFiles[i];
-					std::string fExt	= FileExtension( fPath );
-
-					if ( IsImage( fPath ) && fExt == fromFormat ) {
-						std::string fName;
-
-						if ( fExt != toFormat )
-							fName = fPath.substr( 0, fPath.find_last_of(".") + 1 ) + toFormat;
-						else
-							fName = fPath + "." + toFormat;
-
-						int saveType = -1;
-
-						if ( toFormat == "tga" )
-							saveType = SOIL_SAVE_TYPE_TGA;
-						else if ( toFormat == "bmp" )
-							saveType = SOIL_SAVE_TYPE_BMP;
-						else if ( toFormat == "png" )
-							saveType = SOIL_SAVE_TYPE_PNG;
-						else if ( toFormat == "dds" )
-							saveType = SOIL_SAVE_TYPE_DDS;
-
-						if ( -1 != saveType ) {
-							int w, h, c;
-							unsigned char * img = SOIL_load_image( fPath.c_str(), &w, &h, &c, SOIL_LOAD_AUTO );
-							SOIL_save_image( fName.c_str(), saveType, w, h, c, reinterpret_cast<const unsigned char*>( img ) );
-							SOIL_free_image_data( img );
-
-							Con.PushText( fName + " created." );
-						}
-					}
-				}
-			} else
-				Con.PushText( "Third argument is not a directory! Argument: " + myPath );
-		} catch (...) {
-			Con.PushText( Error );
-		}
+		} else
+			Con.PushText( "Third argument is not a directory! Argument: " + myPath );
 	}
 	else
 	{
@@ -1277,139 +1259,113 @@ void cApp::CmdBatchImgChangeFormat( const std::vector < String >& params ) {
 
 void cApp::CmdMoveTo( const std::vector < String >& params ) {
 	if ( params.size() >= 2 ) {
-		try {
-			Int32 tInt = 0;
+		Int32 tInt = 0;
 
-			bool Res = fromString<Int32>( tInt, params[1] );
+		bool Res = fromString<Int32>( tInt, params[1] );
 
-			if ( tInt )
-				tInt--;
+		if ( tInt )
+			tInt--;
 
-			if ( Res && tInt >= 0 && tInt < (Int32)mFiles.size() ) {
-				Con.PushText( "moveto: moving to image number " + toStr( tInt + 1 ) );
-				FastLoadImage( tInt );
-			} else
-				Con.PushText( "moveto: image number does not exists" );
-
-		} catch (...) {
-			Con.PushText( "Invalid Parameter. Expected int value from '" + params[1] + "'." );
-		}
+		if ( Res && tInt >= 0 && tInt < (Int32)mFiles.size() ) {
+			Con.PushText( "moveto: moving to image number " + toStr( tInt + 1 ) );
+			FastLoadImage( tInt );
+		} else
+			Con.PushText( "moveto: image number does not exists" );
 	} else
 		Con.PushText( "Expected some parameter" );
 }
 
 void cApp::CmdSetBlockWheel( const std::vector < String >& params ) {
 	if ( params.size() >= 2 ) {
-		try {
-			Int32 tInt = 0;
+		Int32 tInt = 0;
 
-			bool Res = fromString<Int32>( tInt, params[1] );
+		bool Res = fromString<Int32>( tInt, params[1] );
 
-			if ( Res && ( tInt == 0 || tInt == 1 ) ) {
-				mBlockWheelSpeed = (bool)tInt;
-				Con.PushText( "setblockwheel " + toStr(tInt) );
-			} else
-				Con.PushText( "Valid parameters are 0 or 1." );
-		} catch (...) {
-			Con.PushText( "Invalid Parameter. Expected int value from '" + params[1] + "'." );
-		}
+		if ( Res && ( tInt == 0 || tInt == 1 ) ) {
+			mBlockWheelSpeed = (bool)tInt;
+			Con.PushText( "setblockwheel " + toStr(tInt) );
+		} else
+			Con.PushText( "Valid parameters are 0 or 1." );
 	} else
 		Con.PushText( "Expected some parameter" );
 }
 
 void cApp::CmdSetLateLoading( const std::vector < String >& params ) {
 	if ( params.size() >= 2 ) {
-		try {
-			Int32 tInt = 0;
+		Int32 tInt = 0;
 
-			bool Res = fromString<Int32>( tInt, params[1] );
+		bool Res = fromString<Int32>( tInt, params[1] );
 
-			if ( Res && ( tInt == 0 || tInt == 1 ) ) {
-				mLateLoading = (bool)tInt;
-				Con.PushText( "setlateloading " + toStr(tInt) );
-			} else
-				Con.PushText( "Valid parameters are 0 or 1." );
-		} catch (...) {
-			Con.PushText( "Invalid Parameter. Expected int value from '" + params[1] + "'." );
-		}
+		if ( Res && ( tInt == 0 || tInt == 1 ) ) {
+			mLateLoading = (bool)tInt;
+			Con.PushText( "setlateloading " + toStr(tInt) );
+		} else
+			Con.PushText( "Valid parameters are 0 or 1." );
 	} else
 		Con.PushText( "Expected some parameter" );
 }
 
 void cApp::CmdSetImgFade( const std::vector < String >& params ) {
 	if ( params.size() >= 2 ) {
-		try {
-			Int32 tInt = 0;
+		Int32 tInt = 0;
 
-			bool Res = fromString<Int32>( tInt, params[1] );
+		bool Res = fromString<Int32>( tInt, params[1] );
 
-			if ( Res && ( tInt == 0 || tInt == 1 ) ) {
-				mFade = (bool)tInt;
-				Con.PushText( "setimgfade " + toStr(tInt) );
-			} else
-				Con.PushText( "Valid parameters are 0 or 1." );
-		} catch (...) {
-			Con.PushText( "Invalid Parameter. Expected int value from '" + params[1] + "'." );
-		}
+		if ( Res && ( tInt == 0 || tInt == 1 ) ) {
+			mFade = (bool)tInt;
+			Con.PushText( "setimgfade " + toStr(tInt) );
+		} else
+			Con.PushText( "Valid parameters are 0 or 1." );
 	} else
 		Con.PushText( "Expected some parameter" );
 }
 
 void cApp::CmdSetBackColor( const std::vector < String >& params ) {
 	String Error( "Example of use: setbackcolor 255 255 255 (RGB Color, numbers between 0 and 255)" );
-	if ( params.size() >= 2 ) {
-		try {
-			if ( params.size() == 4 ) {
-				Int32 R = 0;
-				bool Res1 = fromString<Int32>( R, params[1] );
-				Int32 G = 0;
-				bool Res2 = fromString<Int32>( G, params[2] );
-				Int32 B = 0;
-				bool Res3 = fromString<Int32>( B, params[3] );
 
-				if ( Res1 && Res2 && Res3 && ( R <= 255 && R >= 0 ) && ( G <= 255 && G >= 0 ) && ( B <= 255 && B >= 0 ) ) {
-					mWindow->BackColor( eeColor( R,G,B ) );
-					Con.PushText( "setbackcolor applied" );
-					return;
-				}
+	if ( params.size() >= 2 ) {
+		if ( params.size() == 4 ) {
+			Int32 R = 0;
+			bool Res1 = fromString<Int32>( R, params[1] );
+			Int32 G = 0;
+			bool Res2 = fromString<Int32>( G, params[2] );
+			Int32 B = 0;
+			bool Res3 = fromString<Int32>( B, params[3] );
+
+			if ( Res1 && Res2 && Res3 && ( R <= 255 && R >= 0 ) && ( G <= 255 && G >= 0 ) && ( B <= 255 && B >= 0 ) ) {
+				mWindow->BackColor( eeColor( R,G,B ) );
+				Con.PushText( "setbackcolor applied" );
+				return;
 			}
-			Con.PushText( Error );
-		} catch (...) {
-			Con.PushText( Error );
 		}
+
+		Con.PushText( Error );
 	}
 }
 
 void cApp::CmdLoadImg( const std::vector < String >& params ) {
 	if ( params.size() >= 2 ) {
-		try {
-			std::string myPath = params[1].ToUtf8();
-			if ( IsImage( myPath ) ) {
-				LoadDir( myPath );
-			} else
-				Con.PushText( "\"" + myPath + "\" is not an image path or the image is not supported." );
-		} catch (...) {
-			Con.PushText( "Something goes wrong!!" );
-		}
+		std::string myPath = params[1].ToUtf8();
+
+		if ( IsImage( myPath ) ) {
+			LoadDir( myPath );
+		} else
+			Con.PushText( "\"" + myPath + "\" is not an image path or the image is not supported." );
 	}
 }
 
 void cApp::CmdLoadDir( const std::vector < String >& params ) {
 	if ( params.size() >= 2 ) {
-		try {
-			std::string myPath = params[1].ToUtf8();
-			if ( params.size() > 2 ) {
-				for ( Uint32 i = 2; i < params.size(); i++ )
-					myPath += " " + params[i].ToUtf8();
-			}
-
-			if ( IsDirectory( myPath ) ) {
-				LoadDir( myPath );
-			} else
-				Con.PushText( "If you want to load an image use loadimg. \"" + myPath + "\" is not a directory path." );
-		} catch (...) {
-			Con.PushText( "Something goes wrong!!" );
+		std::string myPath = params[1].ToUtf8();
+		if ( params.size() > 2 ) {
+			for ( Uint32 i = 2; i < params.size(); i++ )
+				myPath += " " + params[i].ToUtf8();
 		}
+
+		if ( IsDirectory( myPath ) ) {
+			LoadDir( myPath );
+		} else
+			Con.PushText( "If you want to load an image use loadimg. \"" + myPath + "\" is not a directory path." );
 	}
 }
 
