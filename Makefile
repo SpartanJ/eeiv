@@ -1,6 +1,10 @@
 -include Makefile.base
 
-EXTRA_LIBS			= libeepp.a
+ifeq ($(DEBUGBUILD), yes)
+EXTRA_LIBS			= libeepp-debug.a
+else
+EXTRA_LIBS			= libeepp-release.a
+endif
 
 EXE     			= eeiv-$(RELEASETYPE)$(OSEXTENSION)
 SRCTEST     		= $(wildcard ./src/*.cpp)
@@ -26,7 +30,7 @@ $(FOBJTEST):
 	@$(CPP) -MT $@ -MM $(patsubst $(OBJDIR)%.o,%.cpp,$@) $(OTHERINC) > $(patsubst %.o,%.d,$@) $(DEBUGFLAGS) $(EXTRA_FLAGS)
 
 $(EXE): $(FOBJHELPERS) $(FOBJMODULES) $(FOBJTEST)
-	$(CPP) -o ./$(EXE) $(FOBJHELPERS) $(FOBJMODULES) $(FOBJTEST) $(LDFLAGS) $(EXTRA_LIBS) $(LIBS)
+	$(CPP) -o ./$(EXE) $(FOBJHELPERS) $(FOBJMODULES) $(FOBJTEST) $(LDFLAGS) $(EXTRA_LIBS) $(DYLIBS)
 
 os:
 	@echo $(BUILD_OS)

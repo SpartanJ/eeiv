@@ -25,7 +25,7 @@ static bool IsImage( const std::string& path ) {
 	if ( !IsDirectory(mPath) && FileSize( mPath ) ) {
 		std::string File = mPath.substr( mPath.find_last_of("/\\") + 1 );
 		std::string Ext = File.substr( File.find_last_of(".") + 1 );
-		toLower( Ext );
+		ToLower( Ext );
 
 		if ( Ext == "png" || Ext == "tga" || Ext == "bmp" || Ext == "jpg" || Ext == "gif" || Ext == "jpeg" || Ext == "dds" || Ext == "psd" || Ext == "hdr" || Ext == "pic" )
 			return true;
