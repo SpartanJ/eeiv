@@ -122,7 +122,7 @@ class cApp {
 		bool mMouseMiddlePressing;
 		eeVector2i mMouseMiddleStartClick, mMouseMiddleClick;
 
-		EE_RENDERTYPE mImgRT;
+		EE_RENDER_MODE mImgRT;
 
 		Int32 mLastWheelUse;
 		bool mShowHelp;
