@@ -1,10 +1,16 @@
 -include Makefile.base
 
-ifeq ($(DEBUGBUILD), yes)
-EXTRA_LIBS			= libeepp-debug.a
-else
-EXTRA_LIBS			= libeepp-release.a
+ifndef LIBS_PATH
+  LIBS_PATH = /home/programming/eepp/libs/$(BUILD_OS)/
 endif
+
+ifeq ($(DEBUGBUILD), yes)
+	DEBUGSTR		= -debug
+else
+	DEBUGSTR		=
+endif
+
+EXTRA_LIBS			= $(LIBS_PATH)libeepp-static$(DEBUGSTR).a $(LIBS_PATH)helpers/libchipmunk$(DEBUGSTR).a $(LIBS_PATH)helpers/libglew$(DEBUGSTR).a $(LIBS_PATH)helpers/libhaikuttf$(DEBUGSTR).a $(LIBS_PATH)helpers/libjpeg-compressor$(DEBUGSTR).a $(LIBS_PATH)helpers/liblibzip$(DEBUGSTR).a $(LIBS_PATH)helpers/libSOIL2$(DEBUGSTR).a $(LIBS_PATH)helpers/libstb_vorbis$(DEBUGSTR).a $(LIBS_PATH)helpers/libzlib$(DEBUGSTR).a
 
 EXE     			= eeiv-$(RELEASETYPE)$(OSEXTENSION)
 SRCTEST     		= $(wildcard ./src/*.cpp)

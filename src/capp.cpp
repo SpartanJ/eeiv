@@ -62,7 +62,7 @@ cApp::cApp( int argc, char *argv[] ) :
 	mSlideTime(4000),
 	mSlideTicks(Sys::GetTicks())
 {
-	mStorePath = Sys::GetStoragePath( "eeiv" ) + FileSystem::GetOSlash();
+	mStorePath = Sys::GetConfigPath( "eeiv" ) + FileSystem::GetOSlash();
 	mTmpPath = mStorePath + "tmp" + FileSystem::GetOSlash();
 
 	std::string nstr;

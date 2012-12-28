@@ -7,7 +7,7 @@ int main(int argc, char *argv[]) {
 
 	eeDelete( MyApp );
 
-	EE::MemoryManager::LogResults();
+	EE::MemoryManager::ShowResults();
 
 	return 0;
 }
