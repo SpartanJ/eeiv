@@ -1,7 +1,11 @@
-#include "capp.hpp"
-#include <algorithm>
+#include <eepp/declares.hpp>
 
 #if EE_PLATFORM == EE_PLATFORM_WIN
+#include <string>
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+#include <windows.h>
 static std::string GetWindowsPath() {
 	#ifdef UNICODE
 		wchar_t Buffer[1024];
@@ -13,7 +17,11 @@ static std::string GetWindowsPath() {
 		return std::string( Buffer );
 	#endif
 }
+#undef CreateWindow
 #endif
+
+#include "capp.hpp"
+#include <algorithm>
 
 static bool IsImage( const std::string& path ) {
 	std::string mPath = path;
@@ -26,11 +34,10 @@ static bool IsImage( const std::string& path ) {
 		std::string Ext = File.substr( File.find_last_of(".") + 1 );
 		String::ToLower( Ext );
 
-		if ( Ext == "png" || Ext == "tga" || Ext == "bmp" || Ext == "jpg" || Ext == "gif" || Ext == "jpeg" || Ext == "dds" || Ext == "psd" || Ext == "hdr" || Ext == "pic" )
+		if ( Ext == "png" || Ext == "tga" || Ext == "bmp" || Ext == "jpg" || Ext == "gif" || Ext == "jpeg" || Ext == "dds" || Ext == "psd" || Ext == "hdr" || Ext == "pic" || Ext == "pvr" || Ext == "pkm" )
 			return true;
 		else {
-			int x,y,c;
-			return cImage::GetInfo( mPath, &x, &y, &c );
+			return cImage::IsImage( mPath );
 		}
 	}
 
@@ -77,7 +84,6 @@ cApp::cApp( int argc, char *argv[] ) :
 
 cApp::~cApp() {
 	ClearTempDir();
-	cEngine::DestroySingleton();
 }
 
 void cApp::LoadConfig() {
@@ -148,7 +154,7 @@ bool cApp::Init() {
 	if ( mConfig.UseDesktopResolution )
 		Style |= WindowStyle::UseDesktopResolution;
 
-	mWindow = EE->CreateWindow( WindowSettings( mConfig.Width, mConfig.Height, "EEiv", Style, WindowBackend::Default, mConfig.BitColor, MyPath + "fonts/" + "eeiv.png" ), ContextSettings( mConfig.VSync, GLv_default, mConfig.DoubleBuffering, 0, 0 ) );
+	mWindow = EE->CreateWindow( WindowSettings( mConfig.Width, mConfig.Height, "EEiv", Style, WindowBackend::Default, mConfig.BitColor, MyPath + "assets/eeiv.png" ), ContextSettings( mConfig.VSync, GLv_default, mConfig.DoubleBuffering, 0, 0 ) );
 
 	if ( mWindow->Created() ) {
 		mFade = mConfig.Fade;
@@ -166,13 +172,13 @@ bool cApp::Init() {
 		if ( mConfig.MaximizeAtStart )
 			mWindow->Maximize();
 
-		cTimeElapsed TE;
+		cClock TE;
 
-		std::string MyFontPath = MyPath + "fonts" + FileSystem::GetOSlash();
+		std::string MyFontPath = MyPath + "assets/fonts" + FileSystem::GetOSlash();
 
 		if ( FileSystem::FileExists( MyFontPath + "DejaVuSans.dds" ) && FileSystem::FileExists( MyFontPath + "DejaVuSans.dat" ) && FileSystem::FileExists( MyFontPath + "DejaVuSansMono.dds" ) && FileSystem::FileExists( MyFontPath + "DejaVuSansMono.dat" ) ) {
-			TexF 	= eeNew( cTextureFont, ( "DejaVuSans" ) );
-			TexFMon = eeNew( cTextureFont, ( "DejaVuSansMono" ) );
+			TexF 	= cTextureFont::New( "DejaVuSans" );
+			TexFMon = cTextureFont::New( "DejaVuSansMono" );
 
 			TexF->Load( TF->Load( MyFontPath + "DejaVuSans.dds" ), MyFontPath + "DejaVuSans.dat" );
 			TexFMon->Load( TF->Load( MyFontPath + "DejaVuSansMono.dds" ), MyFontPath + "DejaVuSansMono.dat" );
@@ -180,22 +186,24 @@ bool cApp::Init() {
 			Fon = reinterpret_cast<cFont*> ( TexF );
 			Mon = reinterpret_cast<cFont*> ( TexFMon );
 		} else {
-			TTF 	= eeNew( cTTFFont, ( "DejaVuSans" ) );
-			TTFMon 	= eeNew( cTTFFont, ( "DejaVuSansMono" ) );
+			TTF 	= cTTFFont::New( "DejaVuSans" );
+			TTFMon 	= cTTFFont::New( "DejaVuSansMono" );
 
 			#if EE_PLATFORM == EE_PLATFORM_WIN
-			std::string WinPath( GetWindowsPath() + "\\Fonts\\" );
-			if ( FileExists( WinPath + "DejaVuSans.ttf" ) && FileExists( WinPath + "DejaVuSansMono.ttf" ) ) {
-				TTF->Load( WinPath + "DejaVuSans.ttf", 12, EE_TTF_STYLE_NORMAL, false, 512, eeColor(), 1, eeColor(0,0,0) );
-				TTFMon->Load( WinPath + "DejaVuSansMono.ttf", 12, EE_TTF_STYLE_NORMAL, false, 512, eeColor(), 1, eeColor(0,0,0) );
+			std::string fontsPath( GetWindowsPath() + "\\Fonts\\" );
 			#else
-			if ( FileSystem::FileExists( "/usr/share/fonts/truetype/DejaVuSans.ttf" ) && FileSystem::FileExists( "/usr/share/fonts/truetype/DejaVuSansMono.ttf" ) ) {
-				TTF->Load( "/usr/share/fonts/truetype/DejaVuSans.ttf", 12, EE_TTF_STYLE_NORMAL, false, 512, eeColor(), 1, eeColor(0,0,0) );
-				TTFMon->Load( "/usr/share/fonts/truetype/DejaVuSansMono.ttf", 12, EE_TTF_STYLE_NORMAL, false, 512, eeColor(), 1, eeColor(0,0,0) );
+			std::string fontsPath( "/usr/share/fonts/truetype/" );
 			#endif
+
+			if ( FileSystem::FileExists( fontsPath + "DejaVuSans.ttf" ) && FileSystem::FileExists( fontsPath + "DejaVuSansMono.ttf" ) ) {
+				TTF->Load( fontsPath + "DejaVuSans.ttf", 12, TTF_STYLE_NORMAL, 512, eeColor(), 1, eeColor(0,0,0) );
+				TTFMon->Load( fontsPath + "DejaVuSansMono.ttf", 12, TTF_STYLE_NORMAL, 512, eeColor(), 1, eeColor(0,0,0) );
 			} else if ( FileSystem::FileExists( MyFontPath + "DejaVuSans.ttf" ) && FileSystem::FileExists( MyFontPath + "DejaVuSansMono.ttf" ) ) {
-				TTF->Load( MyFontPath + "DejaVuSans.ttf", 12, EE_TTF_STYLE_NORMAL, false, 512, eeColor(), 1, eeColor(0,0,0) );
-				TTFMon->Load( MyFontPath + "DejaVuSansMono.ttf", 12, EE_TTF_STYLE_NORMAL, false, 512, eeColor(), 1, eeColor(0,0,0) );
+				TTF->Load( MyFontPath + "DejaVuSans.ttf", 12, TTF_STYLE_NORMAL, 512, eeColor(), 1, eeColor(0,0,0) );
+				TTFMon->Load( MyFontPath + "DejaVuSansMono.ttf", 12, TTF_STYLE_NORMAL, 512, eeColor(), 1, eeColor(0,0,0) );
+			} else if ( FileSystem::FileExists( fontsPath + "Arial.ttf" ) && FileSystem::FileExists( fontsPath + "cour.ttf" ) ) {
+				TTF->Load( fontsPath + "Arial.ttf", 12, TTF_STYLE_NORMAL, 512, eeColor(), 1, eeColor(0,0,0) );
+				TTFMon->Load( fontsPath + "cour.ttf", 12, TTF_STYLE_NORMAL, 512, eeColor(), 0, eeColor(0,0,0) );
 			} else {
 				return false;
 			}
@@ -204,12 +212,12 @@ bool cApp::Init() {
 			Mon = reinterpret_cast<cFont*> ( TTFMon );
 		}
 
-		cLog::instance()->Writef( "Fonts loading time: %f ms", TE.ElapsedSinceStart() );
+		cLog::instance()->Writef( "Fonts loading time: %f ms", TE.Elapsed().AsMilliseconds() );
 
 		if ( !Fon && !Mon )
 			return false;
 
-		Con.Create( Mon, true, 1024000 );
+		Con.Create( Mon, true, true, 1024000 );
 		Con.IgnoreCharOnPrompt( 186 );
 
 		Con.AddCommand( "loaddir", cb::Make1( this, &cApp::CmdLoadDir ) );
@@ -245,11 +253,11 @@ bool cApp::Init() {
 void cApp::Process() {
 	if ( Init() ) {
 		do {
-			ET = mWindow->Elapsed();
+			ET = mWindow->Elapsed().AsMilliseconds();
 
 			Input();
 
-			TEP.Reset();
+			TEP.Restart();
 
 			Render();
 
@@ -257,7 +265,7 @@ void cApp::Process() {
 
 			mWindow->Display();
 
-			RET = TEP.ElapsedSinceStart();
+			RET = TEP.Elapsed().AsMilliseconds();
 
 			if ( mLateLoading && mLaterLoad ) {
 				if ( Sys::GetTicks() - mLastLaterTick > mConfig.TransitionTime ) {
@@ -353,7 +361,7 @@ void cApp::ClearTempDir() {
 }
 
 void cApp::GetImages() {
-	cTimeElapsed TE;
+	cClock TE;
 
 	Uint32 i;
 	std::vector<std::string> tStr;
@@ -374,7 +382,7 @@ void cApp::GetImages() {
 		mFiles.push_back( tmpI );
 	}
 
-	Con.PushText( "Image list loaded in %f ms.", TE.ElapsedSinceStart() );
+	Con.PushText( "Image list loaded in %f ms.", TE.Elapsed().AsMilliseconds() );
 
 	Con.PushText( "Directory: \"" + String::FromUtf8( mFilePath ) + "\"" );
 	for ( Uint32 i = 0; i < mFiles.size(); i++ )
@@ -402,8 +410,7 @@ void cApp::SetImage( const Uint32& Tex, const std::string& path ) {
 		mImgRT = RN_NORMAL;
 
 		mImg.CreateStatic( Tex );
-		mImg.ScaleCentered(true);
-		mImg.RenderType( mImgRT );
+		mImg.RenderMode( mImgRT );
 		mImg.Scale( 1.f );
 		mImg.Position( 0.0f, 0.0f );
 
@@ -432,11 +439,7 @@ void cApp::SetImage( const Uint32& Tex, const std::string& path ) {
 Uint32 cApp::LoadImage( const std::string& path, const bool& SetAsCurrent ) {
 	Uint32 TexId 		= 0;
 
-	TE.Reset();
-
 	TexId = TF->Load( mFilePath + path );
-
-	Con.PushText( String::FromUtf8( path ) + " loaded in " + String::ToStr( TE.ElapsedSinceStart() ) + " ms." );
 
 	if ( SetAsCurrent )
 		SetImage( TexId, path );
@@ -478,7 +481,6 @@ void cApp::OptUpdate() {
 	mImg.CreateStatic( mFiles [ mCurImg ].Tex );
 	mImg.Scale( 1.f );
 	mImg.Position( 0.0f, 0.0f );
-	mImg.ScaleCentered(true);
 
 	ScaleToScreen();
 
@@ -631,8 +633,8 @@ void cApp::Input() {
 		}
 
 		if ( KM->IsKeyUp( KEY_N ) ) {
-			if ( mWindow->Size().Width() != (Int32)mImg.Width() || mWindow->Size().Height() != (Int32)mImg.Height() ) {
-				mWindow->Size( mImg.Width(), mImg.Height() );
+			if ( mWindow->Size().Width() != (Int32)mImg.Size().Width() || mWindow->Size().Height() != (Int32)mImg.Size().Height() ) {
+				mWindow->Size( mImg.Size().Width(), mImg.Size().Height() );
 			}
 		}
 
@@ -654,22 +656,22 @@ void cApp::Input() {
 		}
 
 		if ( KM->IsKeyDown(KEY_LEFT) ) {
-			mImg.X( ( mImg.X() + ( (mWindow->Elapsed() * 0.4f) ) ) );
+			mImg.X( ( mImg.X() + ( (mWindow->Elapsed().AsMilliseconds() * 0.4f) ) ) );
 			mImg.X( static_cast<eeFloat> ( static_cast<Int32> ( mImg.X() ) ) );
 		}
 
 		if ( KM->IsKeyDown(KEY_RIGHT) ) {
-			mImg.X( ( mImg.X() + ( -(mWindow->Elapsed() * 0.4f) ) ) );
+			mImg.X( ( mImg.X() + ( -(mWindow->Elapsed().AsMilliseconds() * 0.4f) ) ) );
 			mImg.X( static_cast<eeFloat> ( static_cast<Int32> ( mImg.X() ) ) );
 		}
 
 		if ( KM->IsKeyDown(KEY_UP) ) {
-			mImg.Y( ( mImg.Y() + ( (mWindow->Elapsed() * 0.4f) ) ) );
+			mImg.Y( ( mImg.Y() + ( (mWindow->Elapsed().AsMilliseconds() * 0.4f) ) ) );
 			mImg.Y( static_cast<eeFloat> ( static_cast<Int32> ( mImg.Y() ) ) );
 		}
 
 		if ( KM->IsKeyDown(KEY_DOWN) ) {
-			mImg.Y( ( mImg.Y() + ( -(mWindow->Elapsed() * 0.4f) ) ) );
+			mImg.Y( ( mImg.Y() + ( -(mWindow->Elapsed().AsMilliseconds() * 0.4f) ) ) );
 			mImg.Y( static_cast<eeFloat> ( static_cast<Int32> ( mImg.Y() ) ) );
 		}
 
@@ -741,7 +743,7 @@ void cApp::Input() {
 			else
 				mImgRT = RN_NORMAL;
 
-			mImg.RenderType( mImgRT );
+			mImg.RenderMode( mImgRT );
 		}
 
 		if ( KM->IsKeyUp(KEY_C) ) {
@@ -754,7 +756,7 @@ void cApp::Input() {
 			else
 				mImgRT = RN_NORMAL;
 
-			mImg.RenderType( mImgRT );
+			mImg.RenderMode( mImgRT );
 		}
 
 		if ( KM->IsKeyUp(KEY_R) ) {
@@ -767,9 +769,9 @@ void cApp::Input() {
 
 			if ( Tex ) {
 				if ( Tex->Filter() == TEX_FILTER_LINEAR )
-					Tex->TextureFilter( TEX_FILTER_NEAREST );
+					Tex->Filter( TEX_FILTER_NEAREST );
 				else
-					Tex->TextureFilter( TEX_FILTER_LINEAR );
+					Tex->Filter( TEX_FILTER_LINEAR );
 			}
 		}
 
@@ -778,7 +780,10 @@ void cApp::Input() {
 			mImg.Scale( 1.f );
 			mImg.Angle( 0.f );
 			ScaleToScreen();
-			EE->GetCurrentWindow()->Size( mImg.Width(), mImg.Height() );
+
+			if ( EE->GetCurrentWindow()->IsMaximized() ) {
+				EE->GetCurrentWindow()->Size( mImg.Size().Width(), mImg.Size().Height() );
+			}
 		}
 
 		if ( KM->IsKeyUp(KEY_T) ) {
@@ -794,6 +799,15 @@ void cApp::Input() {
 
 		if ( KM->IsKeyUp(KEY_D) ) {
 			DisableSlideShow();
+		}
+
+		if ( KM->IsKeyUp(KEY_K) ) {
+			cTexture * curTex;
+
+			if ( NULL != mImg.GetCurrentSubTexture() && NULL != ( curTex = mImg.GetCurrentSubTexture()->GetTexture() ) ) {
+				curTex->Mipmap( !curTex->Mipmap() );
+				curTex->Reload();
+			}
 		}
 	}
 }
@@ -893,11 +907,10 @@ void cApp::Render() {
 		cTexture * Tex = mImg.GetCurrentSubTexture()->GetTexture();
 
 		if ( Tex ) {
-			eeFloat X = static_cast<eeFloat> ( static_cast<Int32> ( HWidth - mImg.Width() * 0.5f ) );
-			eeFloat Y = static_cast<eeFloat> ( static_cast<Int32> ( HHeight - mImg.Height() * 0.5f ) );
+			eeFloat X = static_cast<eeFloat> ( static_cast<Int32> ( HWidth - mImg.Size().Width() * 0.5f ) );
+			eeFloat Y = static_cast<eeFloat> ( static_cast<Int32> ( HHeight - mImg.Size().Height() * 0.5f ) );
 
-			mImg.OffsetX( X );
-			mImg.OffsetY( Y );
+			mImg.Offset( eeVector2i( X, Y ) );
 			mImg.Alpha( mCurAlpha );
 			mImg.Draw();
 		}
@@ -934,11 +947,10 @@ void cApp::DoFade() {
 		cTexture * Tex = NULL;
 
 		if ( NULL != mOldImg.GetCurrentSubTexture() && ( Tex = mOldImg.GetCurrentSubTexture()->GetTexture() ) ) {
-			eeFloat X = static_cast<eeFloat> ( static_cast<Int32> ( HWidth - mOldImg.Width() * 0.5f ) );
-			eeFloat Y = static_cast<eeFloat> ( static_cast<Int32> ( HHeight - mOldImg.Height() * 0.5f ) );
+			eeFloat X = static_cast<eeFloat> ( static_cast<Int32> ( HWidth - mOldImg.Size().Width() * 0.5f ) );
+			eeFloat Y = static_cast<eeFloat> ( static_cast<Int32> ( HHeight - mOldImg.Size().Height() * 0.5f ) );
 
-			mOldImg.OffsetX( X );
-			mOldImg.OffsetY( Y );
+			mOldImg.Offset( eeVector2i( X, Y ) );
 			mOldImg.Alpha( 255 - mCurAlpha );
 			mOldImg.Draw();
 		}
@@ -950,7 +962,7 @@ void cApp::End() {
 }
 
 void cApp::ResizeTexture( cTexture * pTex, const Uint32& NewWidth, const Uint32& NewHeight, const std::string& SavePath ) {
-	std::string Str = SavePath + ".new.png";
+	std::string Str = FileSystem::FileRemoveExtension( SavePath ) + "-" + String::ToStr( NewWidth ) + "x" + String::ToStr( NewHeight ) + ".png";
 
 	Int32 new_width = (Int32)NewWidth;
 	Int32 new_height = (Int32)NewHeight;
@@ -962,13 +974,13 @@ void cApp::ResizeTexture( cTexture * pTex, const Uint32& NewWidth, const Uint32&
 
 		img->Resize( new_width, new_height );
 
-		img->SaveToFile( Str, EE_SAVE_TYPE_PNG );
+		img->SaveToFile( Str, SAVE_TYPE_PNG );
 
 		eeSAFE_DELETE( img );
 
 		pTex->Unlock(false, false);
 	} else {
-		pTex->SaveToFile( Str, EE_SAVE_TYPE_PNG );
+		pTex->SaveToFile( Str, SAVE_TYPE_PNG );
 	}
 }
 
@@ -1169,7 +1181,7 @@ void cApp::CmdImgChangeFormat( const std::vector < String >& params ) {
 
 				EE_SAVE_TYPE saveType = cImage::ExtensionToSaveType( toFormat );
 
-				if ( EE_SAVE_TYPE_UNKNOWN != saveType ) {
+				if ( SAVE_TYPE_UNKNOWN != saveType ) {
 					cImage * img = eeNew( cImage, ( fPath ) );
 					img->SaveToFile( fName, saveType );
 					eeSAFE_DELETE( img );
@@ -1218,7 +1230,7 @@ void cApp::CmdBatchImgChangeFormat( const std::vector < String >& params ) {
 
 					EE_SAVE_TYPE saveType = cImage::ExtensionToSaveType( toFormat );
 
-					if ( EE_SAVE_TYPE_UNKNOWN != saveType ) {
+					if ( SAVE_TYPE_UNKNOWN != saveType ) {
 						cImage * img = eeNew( cImage, ( fPath ) );
 						img->SaveToFile( fPath, saveType );
 						eeSAFE_DELETE( img );
@@ -1374,6 +1386,7 @@ void cApp::PrintHelp() {
 			HT += "Key M: Change the screen size to the size of the current image.\n";
 			HT += "Key E: Play SlideShow\n";
 			HT += "Key D: Pause/Disable SlideShow\n";
+			HT += "Key K: Reload the image switching the mipmap state ( with or without mipmaps )\n";
 			HT += "Key Left - Right - Top - Down or left mouse press: Move the image\n";
 			HT += "Key F12: Take a screenshot\n";
 			HT += "Key HOME: Go to the first screenshot on the folder\n";

@@ -10,7 +10,11 @@ else
 	DEBUGSTR		=
 endif
 
-EXTRA_LIBS			= $(LIBS_PATH)libeepp-static$(DEBUGSTR).a $(LIBS_PATH)helpers/libchipmunk$(DEBUGSTR).a $(LIBS_PATH)helpers/libglew$(DEBUGSTR).a $(LIBS_PATH)helpers/libhaikuttf$(DEBUGSTR).a $(LIBS_PATH)helpers/libjpeg-compressor$(DEBUGSTR).a $(LIBS_PATH)helpers/liblibzip$(DEBUGSTR).a $(LIBS_PATH)helpers/libSOIL2$(DEBUGSTR).a $(LIBS_PATH)helpers/libstb_vorbis$(DEBUGSTR).a $(LIBS_PATH)helpers/libzlib$(DEBUGSTR).a
+EXTRA_LIBS			= $(LIBS_PATH)libeepp-static$(DEBUGSTR).a $(LIBS_PATH)helpers/libchipmunk$(DEBUGSTR).a $(LIBS_PATH)helpers/libglew$(DEBUGSTR).a $(LIBS_PATH)helpers/libhaikuttf$(DEBUGSTR).a $(LIBS_PATH)helpers/libjpeg-compressor$(DEBUGSTR).a $(LIBS_PATH)helpers/liblibzip$(DEBUGSTR).a $(LIBS_PATH)helpers/libSOIL2$(DEBUGSTR).a $(LIBS_PATH)helpers/libstb_vorbis$(DEBUGSTR).a $(LIBS_PATH)helpers/libzlib$(DEBUGSTR).a $(LIBS_PATH)helpers/libimageresampler$(DEBUGSTR).a
+
+ifeq ($(SHARED_BACKEND),no)
+	EXTRA_LIBS += $(LIBS_PATH)libSDL2.a
+endif
 
 EXE     			= eeiv-$(RELEASETYPE)$(OSEXTENSION)
 SRCTEST     		= $(wildcard ./src/*.cpp)
@@ -36,7 +40,7 @@ $(FOBJTEST):
 	@$(CPP) -MT $@ -MM $(patsubst $(OBJDIR)%.o,%.cpp,$@) $(OTHERINC) > $(patsubst %.o,%.d,$@) $(DEBUGFLAGS) $(EXTRA_FLAGS)
 
 $(EXE): $(FOBJHELPERS) $(FOBJMODULES) $(FOBJTEST)
-	$(CPP) -o ./$(EXE) $(FOBJHELPERS) $(FOBJMODULES) $(FOBJTEST) $(LDFLAGS) $(EXTRA_LIBS) $(DYLIBS)
+	$(CPP) -o ./$(EXE) $(FOBJHELPERS) $(FOBJMODULES) $(FOBJTEST) $(LDFLAGS) $(EXTRA_LIBS) $(DYLIBS) -ldl
 
 os:
 	@echo $(BUILD_OS)

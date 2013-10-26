@@ -110,7 +110,7 @@ class cApp {
 		bool mLaterLoad;
 		Int32 mLastLaterTick;
 
-		cTimeElapsed TEP;
+		cClock TEP;
 
 		bool mCursor;
 
@@ -155,7 +155,7 @@ class cApp {
 		std::string mTmpPath;
 		bool mUsedTempDir;
 
-		cTimeElapsed TE;
+		cClock TE;
 
 		cTextCache * mHelpCache;
 

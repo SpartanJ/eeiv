@@ -7,6 +7,8 @@ int main(int argc, char *argv[]) {
 
 	eeDelete( MyApp );
 
+	cEngine::DestroySingleton();
+
 	EE::MemoryManager::ShowResults();
 
 	return 0;
