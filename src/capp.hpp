@@ -41,11 +41,12 @@ class cApp {
 		void BatchDir( const std::string& Path, const eeFloat& Scale );
 		void ScaleImg( const std::string& Path, const eeFloat& Scale );
 		void ResizeImg( const std::string& Path, const Uint32& NewWidth, const Uint32& NewHeight );
-		void ResizeTexture( cTexture * pTex, const Uint32& NewWidth, const Uint32& NewHeight, const std::string& SavePath );
+		void ThumgnailImg( const std::string& Path, const Uint32& MaxWidth, const Uint32& MaxHeight );
 		void SwitchFade();
 		void DoSlideShow();
 		void CreateSlideShow( Uint32 time );
 		void DisableSlideShow();
+		void BatchImgThumbnail( eeSize size, std::string dir, bool recursive );
 
 		void CmdLoadDir( const std::vector < String >& params );
 		void CmdLoadImg( const std::vector < String >& params );
@@ -56,10 +57,16 @@ class cApp {
 		void CmdMoveTo( const std::vector < String >& params );
 		void CmdBatchImgResize( const std::vector < String >& params );
 		void CmdBatchImgChangeFormat( const std::vector < String >& params );
+		void CmdBatchImgThumbnail( const std::vector < String >& params );
 		void CmdImgChangeFormat( const std::vector < String >& params );
 		void CmdImgResize( const std::vector < String >& params );
 		void CmdImgScale( const std::vector < String >& params );
+		void CmdImgThumbnail( const std::vector < String >& params );
 		void CmdSlideShow( const std::vector < String >& params );
+
+		std::string CreateSavePath( const std::string& oriPath, Uint32 width, Uint32 height );
+
+		EE_SAVE_TYPE GetPathSaveType( const std::string& path );
 
 		cEngine * EE;
 		cTextureFactory * TF;

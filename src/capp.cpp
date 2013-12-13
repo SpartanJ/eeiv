@@ -229,9 +229,11 @@ bool cApp::Init() {
 		Con.AddCommand( "moveto", cb::Make1( this, &cApp::CmdMoveTo ) );
 		Con.AddCommand( "batchimgresize", cb::Make1( this, &cApp::CmdBatchImgResize ) );
 		Con.AddCommand( "batchimgchangeformat", cb::Make1( this, &cApp::CmdBatchImgChangeFormat ) );
+		Con.AddCommand( "batchimgthumbnail", cb::Make1( this, &cApp::CmdBatchImgThumbnail ) );
 		Con.AddCommand( "imgchangeformat", cb::Make1( this, &cApp::CmdImgChangeFormat ) );
 		Con.AddCommand( "imgresize", cb::Make1( this, &cApp::CmdImgResize ) );
 		Con.AddCommand( "imgscale", cb::Make1( this, &cApp::CmdImgScale ) );
+		Con.AddCommand( "imgthumbnail", cb::Make1( this, &cApp::CmdImgThumbnail ) );
 		Con.AddCommand( "slideshow", cb::Make1( this, &cApp::CmdSlideShow ) );
 
 		PrepareFrame();
@@ -263,7 +265,7 @@ void cApp::Process() {
 
 			if ( KM->IsKeyUp(KEY_F12) ) mWindow->TakeScreenshot();
 
-			mWindow->Display();
+			mWindow->Display(true);
 
 			RET = TEP.Elapsed().AsMilliseconds();
 
@@ -648,10 +650,10 @@ void cApp::Input() {
 			if ( KM->IsKeyDown(KEY_KP_PLUS) )
 				mImg.Scale( mImg.Scale() + 0.02f );
 
-			if ( mImg.Scale() < 0.0125f )
+			if ( mImg.Scale().x < 0.0125f )
 				mImg.Scale( 0.0125f );
 
-			if ( mImg.Scale() > 50.0f )
+			if ( mImg.Scale().x > 50.0f )
 				mImg.Scale( 50.0f );
 		}
 
@@ -719,7 +721,7 @@ void cApp::Input() {
 					mMouseMiddleStartClick = Mouse;
 					if ( Ang >= 0.0f && Ang <= 180.0f ) {
 						mImg.Scale( mImg.Scale() - Dist );
-						if ( mImg.Scale() < 0.0125f )
+						if ( mImg.Scale().x < 0.0125f )
 							mImg.Scale( 0.0125f );
 					} else {
 						mImg.Scale( mImg.Scale() + Dist );
@@ -861,7 +863,7 @@ void cApp::ZoomImage() {
 		if ( NULL == Tex )
 			return;
 
-		eeFloat OldScale = mImg.Scale();
+		eeVector2f OldScale = mImg.Scale();
 		mImg.Scale( 1.0f );
 		eeAABB mBox = mImg.GetAABB();
 		mImg.Scale( OldScale );
@@ -874,7 +876,7 @@ void cApp::ZoomImage() {
 		eeFloat mScale2 = 1.f;
 		mScale2 = Height / iHeight;
 
-		if ( mScale2 < mImg.Scale() )
+		if ( mScale2 < mImg.Scale().x )
 			mImg.Scale( mScale2 );
 	}
 }
@@ -961,47 +963,28 @@ void cApp::End() {
 	cEngine::DestroySingleton();
 }
 
-void cApp::ResizeTexture( cTexture * pTex, const Uint32& NewWidth, const Uint32& NewHeight, const std::string& SavePath ) {
-	std::string Str = FileSystem::FileRemoveExtension( SavePath ) + "-" + String::ToStr( NewWidth ) + "x" + String::ToStr( NewHeight ) + ".png";
+std::string cApp::CreateSavePath( const std::string & oriPath, Uint32 width, Uint32 height ) {
+	EE_SAVE_TYPE saveType = cImage::ExtensionToSaveType( FileSystem::FileExtension( oriPath ) );
 
-	Int32 new_width = (Int32)NewWidth;
-	Int32 new_height = (Int32)NewHeight;
-
-	if ( (Int32)pTex->Width() != new_width || (Int32)pTex->Height() != new_height ) {
-		pTex->Lock();
-
-		cImage * img = eeNew( cImage, ( pTex->GetPixelsPtr(), pTex->Width(), pTex->Height(), pTex->Channels() ) );
-
-		img->Resize( new_width, new_height );
-
-		img->SaveToFile( Str, SAVE_TYPE_PNG );
-
-		eeSAFE_DELETE( img );
-
-		pTex->Unlock(false, false);
-	} else {
-		pTex->SaveToFile( Str, SAVE_TYPE_PNG );
+	if ( SAVE_TYPE_UNKNOWN == saveType ) {
+		saveType = SAVE_TYPE_PNG;
 	}
+
+	return FileSystem::FileRemoveExtension( oriPath ) + "-" + String::ToStr( width ) + "x" + String::ToStr( height ) + "." + cImage::SaveTypeToExtension( saveType );
+}
+
+EE_SAVE_TYPE cApp::GetPathSaveType( const std::string& path ) {
+	return cImage::ExtensionToSaveType( FileSystem::FileExtension( path ) );
 }
 
 void cApp::ScaleImg( const std::string& Path, const eeFloat& Scale ) {
-	if ( IsImage( Path ) && 1.f != Scale ) {
-		bool wasLoaded = true;
-		cTexture * pTex = TF->GetByName( Path );
+	int w, h, c;
 
-		if ( NULL == pTex ) {
-			Uint32 Tex = TF->Load( Path );
-			pTex = TF->GetTexture( Tex );
-			wasLoaded = false;
-		}
+	if ( cImage::GetInfo( Path, &w, &h, &c ) && Scale > 0.f ) {
+		Int32 new_width		= static_cast<Int32>( w * Scale );
+		Int32 new_height	= static_cast<Int32>( h * Scale );
 
-		Int32 new_width = static_cast<Int32>( pTex->Width() * Scale );
-		Int32 new_height = static_cast<Int32>( pTex->Height() * Scale );
-
-		ResizeTexture( pTex, new_width, new_height, Path );
-
-		if ( !wasLoaded )
-			TF->Remove( pTex->Id() );
+		ResizeImg( Path, new_width, new_height );
 	} else {
 		Con.PushText( "Images does not exists." );
 	}
@@ -1009,19 +992,31 @@ void cApp::ScaleImg( const std::string& Path, const eeFloat& Scale ) {
 
 void cApp::ResizeImg( const std::string& Path, const Uint32& NewWidth, const Uint32& NewHeight ) {
 	if ( IsImage( Path ) ) {
-		bool wasLoaded = true;
-		cTexture * pTex = TF->GetByName( Path );
+		std::string newPath( CreateSavePath( Path, NewWidth, NewHeight ) );
 
-		if ( NULL == pTex ) {
-			Uint32 Tex = TF->Load( Path );
-			pTex = TF->GetTexture( Tex );
-			wasLoaded = false;
+		cImage img( Path );
+
+		img.Resize( NewWidth, NewHeight );
+
+		img.SaveToFile( newPath, GetPathSaveType( newPath ) );
+	} else {
+		Con.PushText( "Images does not exists." );
+	}
+}
+
+void cApp::ThumgnailImg( const std::string& Path, const Uint32& MaxWidth, const Uint32& MaxHeight ) {
+	if ( IsImage( Path ) ) {
+		cImage img( Path );
+
+		cImage * thumb = img.Thumbnail( MaxWidth, MaxHeight );
+
+		if ( NULL != thumb ) {
+			std::string newPath( CreateSavePath( Path, thumb->Width(), thumb->Height() ) );
+
+			thumb->SaveToFile( newPath, GetPathSaveType( newPath ) );
+
+			eeSAFE_DELETE( thumb );
 		}
-
-		ResizeTexture( pTex, NewWidth, NewHeight, Path );
-
-		if ( !wasLoaded )
-			TF->Remove( pTex->Id() );
 	} else {
 		Con.PushText( "Images does not exists." );
 	}
@@ -1040,8 +1035,44 @@ void cApp::BatchDir( const std::string& Path, const eeFloat& Scale ) {
 	}
 }
 
+void cApp::BatchImgThumbnail( eeSize size, std::string dir, bool recursive ) {
+	FileSystem::DirPathAddSlashAtEnd( dir );
+
+	std::vector<std::string> files = FileSystem::FilesGetInPath( dir );
+
+	for ( size_t i = 0; i < files.size(); i++ ) {
+		std::string fpath( dir + files[i] );
+
+		if ( FileSystem::IsDirectory( fpath ) ) {
+			if ( recursive ) {
+				BatchImgThumbnail( size, fpath, recursive );
+			}
+		} else {
+			int w, h, c;
+
+			if ( cImage::GetInfo( fpath, &w, &h, &c ) ) {
+				if ( w > size.Width() || h > size.Height() ) {
+					cImage img( fpath );
+
+					cImage * thumb = img.Thumbnail( size.Width(), size.Height() );
+
+					if ( NULL != thumb ) {
+						thumb->SaveToFile( fpath, cImage::ExtensionToSaveType( FileSystem::FileExtension( fpath ) ) );
+
+						Con.PushText( "Thumbnail created for '%s'. Old size %dx%d. New size %dx%d.", fpath.c_str(), img.Width(), img.Height(), thumb->Width(), thumb->Height() );
+
+						eeSAFE_DELETE( thumb );
+					} else {
+						Con.PushText( "Thumbnail %s failed to create.", fpath.c_str() );
+					}
+				}
+			}
+		}
+	}
+}
+
 void cApp::CmdSlideShow( const std::vector < String >& params ) {
-	String Error( "Example of use: slideshow slide_time_in_ms" );
+	String Error( "Usage example: slideshow slide_time_in_ms" );
 
 	if ( params.size() >= 2 ) {
 		Uint32 time = 0;
@@ -1065,7 +1096,7 @@ void cApp::CmdSlideShow( const std::vector < String >& params ) {
 }
 
 void cApp::CmdImgResize( const std::vector < String >& params ) {
-	String Error( "Example of use: imgresize new_width new_height path_to_img" );
+	String Error( "Usage example: imgresize new_width new_height path_to_img" );
 	if ( params.size() >= 3 ) {
 		Uint32 nWidth = 0;
 		Uint32 nHeight = 0;
@@ -1093,8 +1124,38 @@ void cApp::CmdImgResize( const std::vector < String >& params ) {
 	}
 }
 
+void cApp::CmdImgThumbnail( const std::vector < String >& params ) {
+	String Error( "Usage example: imgthumbnail max_width max_height path_to_img" );
+	if ( params.size() >= 3 ) {
+		Uint32 nWidth = 0;
+		Uint32 nHeight = 0;
+
+		bool Res1 = String::FromString<Uint32> ( nWidth, params[1] );
+		bool Res2 = String::FromString<Uint32> ( nHeight, params[2] );
+
+		std::string myPath;
+
+		if ( params.size() >= 4 ) {
+			myPath = params[3].ToUtf8();
+			if ( params.size() > 4 ) {
+				for ( Uint32 i = 4; i < params.size(); i++ )
+					myPath += " " + params[i].ToUtf8();
+			}
+		} else {
+			myPath = mFilePath + mFile;
+		}
+
+		if ( Res1 && Res2 )
+			ThumgnailImg( myPath, nWidth, nHeight );
+		else
+			Con.PushText( Error );
+	} else {
+		Con.PushText( Error );
+	}
+}
+
 void cApp::CmdImgScale( const std::vector < String >& params ) {
-	String Error( "Example of use: imgscale scale path_to_img" );
+	String Error( "Usage example: imgscale scale path_to_img" );
 	if ( params.size() >= 2 ) {
 		eeFloat Scale = 0;
 
@@ -1121,7 +1182,7 @@ void cApp::CmdImgScale( const std::vector < String >& params ) {
 }
 
 void cApp::CmdBatchImgResize( const std::vector < String >& params ) {
-	String Error( "Example of use: batchimgresize scale_value directory_to_resize_img" );
+	String Error( "Usage example: batchimgresize scale_value directory_to_resize_img" );
 	if ( params.size() >= 3 ) {
 		eeFloat Scale = 0;
 
@@ -1147,8 +1208,44 @@ void cApp::CmdBatchImgResize( const std::vector < String >& params ) {
 	}
 }
 
+void cApp::CmdBatchImgThumbnail( const std::vector < String >& params ) {
+	String Error( "Usage example: batchimgthumbnail max_width max_height directory_to_create_thumbs recursive" );
+
+	if ( params.size() >= 3 ) {
+		Uint32 max_width = 0, max_height = 0;
+		bool recursive = false;
+
+		bool Res1 = String::FromString<Uint32>( max_width, params[1] );
+		bool Res2 = String::FromString<Uint32>( max_height, params[2] );
+
+		std::string myPath = params[3].ToUtf8();
+		if ( params.size() > 3 && params[4] != "recursive" ) {
+			for ( Uint32 i = 4; i < params.size(); i++ )
+				myPath += " " + params[i].ToUtf8();
+		}
+
+		if ( params[4] == "recursive" ) {
+			recursive = true;
+		}
+
+		if ( Res1 && Res2 ) {
+			if ( FileSystem::IsDirectory( myPath ) ) {
+				BatchImgThumbnail( eeSize( max_width, max_height ), myPath, recursive );
+			} else {
+				Con.PushText( "Third argument is not a directory!" );
+			}
+		} else {
+			Con.PushText( Error );
+		}
+	}
+	else
+	{
+		Con.PushText( Error );
+	}
+}
+
 void cApp::CmdImgChangeFormat( const std::vector < String >& params ) {
-	String Error( "Example of use: imgchangeformat to_format image_to_reformat ( if null will use the current loaded image )" );
+	String Error( "Usage example: imgchangeformat to_format image_to_reformat ( if null will use the current loaded image )" );
 	if ( params.size() >= 2 ) {
 		std::string toFormat = params[1].ToUtf8();
 		std::string myPath;
@@ -1199,7 +1296,7 @@ void cApp::CmdImgChangeFormat( const std::vector < String >& params ) {
 }
 
 void cApp::CmdBatchImgChangeFormat( const std::vector < String >& params ) {
-	String Error( "Example of use: batchimgchangeformat from_format to_format directory_to_reformat" );
+	String Error( "Usage example: batchimgchangeformat from_format to_format directory_to_reformat" );
 	if ( params.size() >= 4 ) {
 		std::string fromFormat = params[1].ToUtf8();
 		std::string toFormat = params[2].ToUtf8();
@@ -1312,7 +1409,7 @@ void cApp::CmdSetImgFade( const std::vector < String >& params ) {
 }
 
 void cApp::CmdSetBackColor( const std::vector < String >& params ) {
-	String Error( "Example of use: setbackcolor 255 255 255 (RGB Color, numbers between 0 and 255)" );
+	String Error( "Usage example: setbackcolor 255 255 255 (RGB Color, numbers between 0 and 255)" );
 
 	if ( params.size() >= 2 ) {
 		if ( params.size() == 4 ) {
