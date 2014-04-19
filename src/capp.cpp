@@ -108,6 +108,8 @@ void cApp::LoadConfig() {
 		mConfig.BlockWheelSpeed = Ini.GetValueB( "Viewer", "BlockWheelSpeed", true );
 		mConfig.ShowInfo = Ini.GetValueB( "Viewer", "ShowInfo", true );
 		mConfig.TransitionTime = Ini.GetValueI( "Viewer", "TransitionTime", 200 );
+		mConfig.ConsoleFontSize = Ini.GetValueI( "Viewer", "ConsoleFontSize", 12 );
+		mConfig.AppFontSize = Ini.GetValueI( "Viewer", "AppFontSize", 12 );
 	} else {
 		Ini.SetValueI( "Window", "Width", 1024 );
 		Ini.SetValueI( "Window", "Height", 768 );
@@ -125,6 +127,8 @@ void cApp::LoadConfig() {
 		Ini.SetValueI( "Viewer", "BlockWheelSpeed", 1 );
 		Ini.SetValueI( "Viewer", "ShowInfo", 1 );
 		Ini.SetValueI( "Viewer", "TransitionTime", 200 );
+		Ini.SetValueI( "Viewer", "ConsoleFontSize", 12 );
+		Ini.SetValueI( "Viewer", "AppFontSize", 12 );
 
 		if ( !FileSystem::IsDirectory( mStorePath ) )
 			FileSystem::MakeDir( mStorePath );
@@ -196,14 +200,14 @@ bool cApp::Init() {
 			#endif
 
 			if ( FileSystem::FileExists( fontsPath + "DejaVuSans.ttf" ) && FileSystem::FileExists( fontsPath + "DejaVuSansMono.ttf" ) ) {
-				TTF->Load( fontsPath + "DejaVuSans.ttf", 12, TTF_STYLE_NORMAL, 512, eeColor(), 1, eeColor(0,0,0) );
-				TTFMon->Load( fontsPath + "DejaVuSansMono.ttf", 12, TTF_STYLE_NORMAL, 512, eeColor(), 1, eeColor(0,0,0) );
+				TTF->Load( fontsPath + "DejaVuSans.ttf", mConfig.AppFontSize, TTF_STYLE_NORMAL, 512, eeColor(), 1, eeColor(0,0,0) );
+				TTFMon->Load( fontsPath + "DejaVuSansMono.ttf", mConfig.ConsoleFontSize, TTF_STYLE_NORMAL, 512, eeColor(), 1, eeColor(0,0,0) );
 			} else if ( FileSystem::FileExists( MyFontPath + "DejaVuSans.ttf" ) && FileSystem::FileExists( MyFontPath + "DejaVuSansMono.ttf" ) ) {
-				TTF->Load( MyFontPath + "DejaVuSans.ttf", 12, TTF_STYLE_NORMAL, 512, eeColor(), 1, eeColor(0,0,0) );
-				TTFMon->Load( MyFontPath + "DejaVuSansMono.ttf", 12, TTF_STYLE_NORMAL, 512, eeColor(), 1, eeColor(0,0,0) );
+				TTF->Load( MyFontPath + "DejaVuSans.ttf", mConfig.AppFontSize, TTF_STYLE_NORMAL, 512, eeColor(), 1, eeColor(0,0,0) );
+				TTFMon->Load( MyFontPath + "DejaVuSansMono.ttf", mConfig.ConsoleFontSize, TTF_STYLE_NORMAL, 512, eeColor(), 1, eeColor(0,0,0) );
 			} else if ( FileSystem::FileExists( fontsPath + "Arial.ttf" ) && FileSystem::FileExists( fontsPath + "cour.ttf" ) ) {
-				TTF->Load( fontsPath + "Arial.ttf", 12, TTF_STYLE_NORMAL, 512, eeColor(), 1, eeColor(0,0,0) );
-				TTFMon->Load( fontsPath + "cour.ttf", 12, TTF_STYLE_NORMAL, 512, eeColor(), 0, eeColor(0,0,0) );
+				TTF->Load( fontsPath + "Arial.ttf", mConfig.AppFontSize, TTF_STYLE_NORMAL, 512, eeColor(), 1, eeColor(0,0,0) );
+				TTFMon->Load( fontsPath + "cour.ttf", mConfig.ConsoleFontSize, TTF_STYLE_NORMAL, 512, eeColor(), 0, eeColor(0,0,0) );
 			} else {
 				return false;
 			}

@@ -153,6 +153,8 @@ class cApp {
 			bool ShowInfo;
 			Uint32 FrameLimit;
 			float TransitionTime;
+			int ConsoleFontSize;
+			int AppFontSize;
 		} sConfig;
 		sConfig mConfig;
 
