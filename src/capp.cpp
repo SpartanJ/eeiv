@@ -1186,13 +1186,14 @@ void cApp::CmdImgScale( const std::vector < String >& params ) {
 }
 
 void cApp::CmdBatchImgResize( const std::vector < String >& params ) {
-	String Error( "Usage example: batchimgresize scale_value directory_to_resize_img" );
+	String Error( "Usage example: batchimgresize scale_value directory_to_resize_img ( if no dir is passed, it will use the current dir opened )" );
 	if ( params.size() >= 3 ) {
 		eeFloat Scale = 0;
 
 		bool Res = String::FromString<eeFloat>( Scale, params[1] );
 
-		std::string myPath = params[2].ToUtf8();
+		std::string myPath = params.size() >= 3 ? params[2].ToUtf8() : mFilePath;
+
 		if ( params.size() > 3 ) {
 			for ( Uint32 i = 3; i < params.size(); i++ )
 				myPath += " " + params[i].ToUtf8();
@@ -1213,7 +1214,7 @@ void cApp::CmdBatchImgResize( const std::vector < String >& params ) {
 }
 
 void cApp::CmdBatchImgThumbnail( const std::vector < String >& params ) {
-	String Error( "Usage example: batchimgthumbnail max_width max_height directory_to_create_thumbs recursive" );
+	String Error( "Usage example: batchimgthumbnail max_width max_height directory_to_create_thumbs recursive ( if no dir is passed, it will use the current dir opened )" );
 
 	if ( params.size() >= 3 ) {
 		Uint32 max_width = 0, max_height = 0;
@@ -1222,13 +1223,14 @@ void cApp::CmdBatchImgThumbnail( const std::vector < String >& params ) {
 		bool Res1 = String::FromString<Uint32>( max_width, params[1] );
 		bool Res2 = String::FromString<Uint32>( max_height, params[2] );
 
-		std::string myPath = params[3].ToUtf8();
-		if ( params.size() > 3 && params[4] != "recursive" ) {
+		std::string myPath = params.size() >= 4 ? params[3].ToUtf8() : mFilePath;
+
+		if ( params.size() > 4 && params[4] != "recursive" ) {
 			for ( Uint32 i = 4; i < params.size(); i++ )
 				myPath += " " + params[i].ToUtf8();
 		}
 
-		if ( params[4] == "recursive" ) {
+		if ( params.size() > 4 && params[ params.size() - 1 ] == "recursive" ) {
 			recursive = true;
 		}
 
@@ -1300,12 +1302,12 @@ void cApp::CmdImgChangeFormat( const std::vector < String >& params ) {
 }
 
 void cApp::CmdBatchImgChangeFormat( const std::vector < String >& params ) {
-	String Error( "Usage example: batchimgchangeformat from_format to_format directory_to_reformat" );
+	String Error( "Usage example: batchimgchangeformat from_format to_format directory_to_reformat ( if no dir is passed, it will use the current dir opened )" );
 	if ( params.size() >= 4 ) {
 		std::string fromFormat = params[1].ToUtf8();
 		std::string toFormat = params[2].ToUtf8();
 
-		std::string myPath = params[3].ToUtf8();
+		std::string myPath = params.size() >= 4 ? params[3].ToUtf8() : mFilePath;
 		if ( params.size() > 3 ) {
 			for ( Uint32 i = 4; i < params.size(); i++ )
 				myPath += " " + params[i].ToUtf8();
