@@ -265,11 +265,15 @@ void cApp::Process() {
 
 			TEP.Restart();
 
-			Render();
+			if ( mWindow->Visible() ) {
+				Render();
 
-			if ( KM->IsKeyUp(KEY_F12) ) mWindow->TakeScreenshot();
+				if ( KM->IsKeyUp(KEY_F12) ) mWindow->TakeScreenshot();
 
-			mWindow->Display(true);
+				mWindow->Display(true);
+			} else {
+				Sys::Sleep( 16 );
+			}
 
 			RET = TEP.Elapsed().AsMilliseconds();
 
