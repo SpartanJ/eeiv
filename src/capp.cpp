@@ -17,6 +17,7 @@ static std::string GetWindowsPath() {
 		return std::string( Buffer );
 	#endif
 }
+#undef RGB
 #undef CreateWindow
 #endif
 
@@ -37,7 +38,7 @@ static bool IsImage( const std::string& path ) {
 		if ( Ext == "png" || Ext == "tga" || Ext == "bmp" || Ext == "jpg" || Ext == "gif" || Ext == "jpeg" || Ext == "dds" || Ext == "psd" || Ext == "hdr" || Ext == "pic" || Ext == "pvr" || Ext == "pkm" )
 			return true;
 		else {
-			return cImage::IsImage( mPath );
+			return Image::IsImage( mPath );
 		}
 	}
 
@@ -88,7 +89,7 @@ cApp::~cApp() {
 
 void cApp::LoadConfig() {
 	std::string tPath = mStorePath + "eeiv.ini";
-	cIniFile Ini( tPath );
+	IniFile Ini( tPath );
 
 	if ( FileSystem::FileExists( tPath ) ) {
 		Ini.ReadFile();
@@ -141,7 +142,7 @@ void cApp::LoadConfig() {
 bool cApp::Init() {
 	LoadConfig();
 
-	EE 		= cEngine::instance();
+	EE 		= Engine::instance();
 	MyPath 	= Sys::GetProcessPath();
 
 	Uint32 Style = WindowStyle::Titlebar;
@@ -158,7 +159,13 @@ bool cApp::Init() {
 	if ( mConfig.UseDesktopResolution )
 		Style |= WindowStyle::UseDesktopResolution;
 
-	mWindow = EE->CreateWindow( WindowSettings( mConfig.Width, mConfig.Height, "EEiv", Style, WindowBackend::Default, mConfig.BitColor, MyPath + "assets/eeiv.png" ), ContextSettings( mConfig.VSync, GLv_default, mConfig.DoubleBuffering, 0, 0 ) );
+	std::string iconp( MyPath + "assets/eeiv.png" );
+
+	if ( !FileSystem::FileExists( iconp ) ) {
+		iconp = MyPath + "assets/icon/ee.png";
+	}
+
+	mWindow = EE->CreateWindow( WindowSettings( mConfig.Width, mConfig.Height, "eeiv", Style, WindowBackend::Default, mConfig.BitColor, iconp ), ContextSettings( mConfig.VSync, GLv_default, mConfig.DoubleBuffering, 0, 0 ) );
 
 	if ( mWindow->Created() ) {
 		mFade = mConfig.Fade;
@@ -169,29 +176,29 @@ bool cApp::Init() {
 		if ( mConfig.FrameLimit )
 			mWindow->FrameRateLimit(60);
 
-		TF 		= cTextureFactory::instance();
-		Log 	= cLog::instance();
+		TF 		= TextureFactory::instance();
+		Log 	= Log::instance();
 		KM 		= mWindow->GetInput();
 
 		if ( mConfig.MaximizeAtStart )
 			mWindow->Maximize();
 
-		cClock TE;
+		Clock TE;
 
 		std::string MyFontPath = MyPath + "assets/fonts" + FileSystem::GetOSlash();
 
 		if ( FileSystem::FileExists( MyFontPath + "DejaVuSans.dds" ) && FileSystem::FileExists( MyFontPath + "DejaVuSans.dat" ) && FileSystem::FileExists( MyFontPath + "DejaVuSansMono.dds" ) && FileSystem::FileExists( MyFontPath + "DejaVuSansMono.dat" ) ) {
-			TexF 	= cTextureFont::New( "DejaVuSans" );
-			TexFMon = cTextureFont::New( "DejaVuSansMono" );
+			TexF 	= TextureFont::New( "DejaVuSans" );
+			TexFMon = TextureFont::New( "DejaVuSansMono" );
 
 			TexF->Load( TF->Load( MyFontPath + "DejaVuSans.dds" ), MyFontPath + "DejaVuSans.dat" );
 			TexFMon->Load( TF->Load( MyFontPath + "DejaVuSansMono.dds" ), MyFontPath + "DejaVuSansMono.dat" );
 
-			Fon = reinterpret_cast<cFont*> ( TexF );
-			Mon = reinterpret_cast<cFont*> ( TexFMon );
+			Fon = reinterpret_cast<Font*> ( TexF );
+			Mon = reinterpret_cast<Font*> ( TexFMon );
 		} else {
-			TTF 	= cTTFFont::New( "DejaVuSans" );
-			TTFMon 	= cTTFFont::New( "DejaVuSansMono" );
+			TTF 	= TTFFont::New( "DejaVuSans" );
+			TTFMon 	= TTFFont::New( "DejaVuSansMono" );
 
 			#if EE_PLATFORM == EE_PLATFORM_WIN
 			std::string fontsPath( GetWindowsPath() + "\\Fonts\\" );
@@ -200,23 +207,23 @@ bool cApp::Init() {
 			#endif
 
 			if ( FileSystem::FileExists( fontsPath + "DejaVuSans.ttf" ) && FileSystem::FileExists( fontsPath + "DejaVuSansMono.ttf" ) ) {
-				TTF->Load( fontsPath + "DejaVuSans.ttf", mConfig.AppFontSize, TTF_STYLE_NORMAL, 512, eeColor(), 1, eeColor(0,0,0) );
-				TTFMon->Load( fontsPath + "DejaVuSansMono.ttf", mConfig.ConsoleFontSize, TTF_STYLE_NORMAL, 512, eeColor(), 1, eeColor(0,0,0) );
+				TTF->Load( fontsPath + "DejaVuSans.ttf", mConfig.AppFontSize, TTF_STYLE_NORMAL, 512, RGB(), 1, RGB(0,0,0) );
+				TTFMon->Load( fontsPath + "DejaVuSansMono.ttf", mConfig.ConsoleFontSize, TTF_STYLE_NORMAL, 512, RGB(), 1, RGB(0,0,0) );
 			} else if ( FileSystem::FileExists( MyFontPath + "DejaVuSans.ttf" ) && FileSystem::FileExists( MyFontPath + "DejaVuSansMono.ttf" ) ) {
-				TTF->Load( MyFontPath + "DejaVuSans.ttf", mConfig.AppFontSize, TTF_STYLE_NORMAL, 512, eeColor(), 1, eeColor(0,0,0) );
-				TTFMon->Load( MyFontPath + "DejaVuSansMono.ttf", mConfig.ConsoleFontSize, TTF_STYLE_NORMAL, 512, eeColor(), 1, eeColor(0,0,0) );
+				TTF->Load( MyFontPath + "DejaVuSans.ttf", mConfig.AppFontSize, TTF_STYLE_NORMAL, 512, RGB(), 1, RGB(0,0,0) );
+				TTFMon->Load( MyFontPath + "DejaVuSansMono.ttf", mConfig.ConsoleFontSize, TTF_STYLE_NORMAL, 512, RGB(), 1, RGB(0,0,0) );
 			} else if ( FileSystem::FileExists( fontsPath + "Arial.ttf" ) && FileSystem::FileExists( fontsPath + "cour.ttf" ) ) {
-				TTF->Load( fontsPath + "Arial.ttf", mConfig.AppFontSize, TTF_STYLE_NORMAL, 512, eeColor(), 1, eeColor(0,0,0) );
-				TTFMon->Load( fontsPath + "cour.ttf", mConfig.ConsoleFontSize, TTF_STYLE_NORMAL, 512, eeColor(), 0, eeColor(0,0,0) );
+				TTF->Load( fontsPath + "Arial.ttf", mConfig.AppFontSize, TTF_STYLE_NORMAL, 512, RGB(), 1, RGB(0,0,0) );
+				TTFMon->Load( fontsPath + "cour.ttf", mConfig.ConsoleFontSize, TTF_STYLE_NORMAL, 512, RGB(), 0, RGB(0,0,0) );
 			} else {
 				return false;
 			}
 
-			Fon = reinterpret_cast<cFont*> ( TTF );
-			Mon = reinterpret_cast<cFont*> ( TTFMon );
+			Fon = reinterpret_cast<Font*> ( TTF );
+			Mon = reinterpret_cast<Font*> ( TTFMon );
 		}
 
-		cLog::instance()->Writef( "Fonts loading time: %f ms", TE.Elapsed().AsMilliseconds() );
+		Log::instance()->Writef( "Fonts loading time: %f ms", TE.Elapsed().AsMilliseconds() );
 
 		if ( !Fon && !Mon )
 			return false;
@@ -371,7 +378,7 @@ void cApp::ClearTempDir() {
 }
 
 void cApp::GetImages() {
-	cClock TE;
+	Clock TE;
 
 	Uint32 i;
 	std::vector<std::string> tStr;
@@ -431,7 +438,7 @@ void cApp::SetImage( const Uint32& Tex, const std::string& path ) {
 
 		ScaleToScreen();
 
-		cTexture * pTex = TF->GetTexture( Tex );
+		Texture * pTex = TF->GetTexture( Tex );
 
 		if ( NULL != pTex ) {
 			Fon->SetText(
@@ -442,7 +449,7 @@ void cApp::SetImage( const Uint32& Tex, const std::string& path ) {
 			);
 		}
 	} else {
-		Fon->SetText( "File: " + String::FromUtf8( path ) + " failed to load. \nReason: " + cImage::GetLastFailureReason() );
+		Fon->SetText( "File: " + String::FromUtf8( path ) + " failed to load. \nReason: " + Image::GetLastFailureReason() );
 	}
 }
 
@@ -498,7 +505,7 @@ void cApp::OptUpdate() {
 		mLaterLoad = true;
 		mLastLaterTick = Sys::GetTicks();
 
-		cTexture * Tex = TF->GetTexture( mFiles [ mCurImg ].Tex );
+		Texture * Tex = TF->GetTexture( mFiles [ mCurImg ].Tex );
 
 		if ( Tex ) {
 			Fon->SetText(
@@ -667,22 +674,22 @@ void cApp::Input() {
 
 		if ( KM->IsKeyDown(KEY_LEFT) ) {
 			mImg.X( ( mImg.X() + ( (mWindow->Elapsed().AsMilliseconds() * 0.4f) ) ) );
-			mImg.X( static_cast<eeFloat> ( static_cast<Int32> ( mImg.X() ) ) );
+			mImg.X( static_cast<Float> ( static_cast<Int32> ( mImg.X() ) ) );
 		}
 
 		if ( KM->IsKeyDown(KEY_RIGHT) ) {
 			mImg.X( ( mImg.X() + ( -(mWindow->Elapsed().AsMilliseconds() * 0.4f) ) ) );
-			mImg.X( static_cast<eeFloat> ( static_cast<Int32> ( mImg.X() ) ) );
+			mImg.X( static_cast<Float> ( static_cast<Int32> ( mImg.X() ) ) );
 		}
 
 		if ( KM->IsKeyDown(KEY_UP) ) {
 			mImg.Y( ( mImg.Y() + ( (mWindow->Elapsed().AsMilliseconds() * 0.4f) ) ) );
-			mImg.Y( static_cast<eeFloat> ( static_cast<Int32> ( mImg.Y() ) ) );
+			mImg.Y( static_cast<Float> ( static_cast<Int32> ( mImg.Y() ) ) );
 		}
 
 		if ( KM->IsKeyDown(KEY_DOWN) ) {
 			mImg.Y( ( mImg.Y() + ( -(mWindow->Elapsed().AsMilliseconds() * 0.4f) ) ) );
-			mImg.Y( static_cast<eeFloat> ( static_cast<Int32> ( mImg.Y() ) ) );
+			mImg.Y( static_cast<Float> ( static_cast<Int32> ( mImg.Y() ) ) );
 		}
 
 		if ( KM->MouseLeftClick() ) {
@@ -690,15 +697,15 @@ void cApp::Input() {
 		}
 
 		if ( KM->MouseLeftPressed() ) {
-			eeVector2f mNewPos;
+			Vector2f mNewPos;
 			if ( !mMouseLeftPressing ) {
 				mMouseLeftStartClick = Mouse;
 				mMouseLeftPressing = true;
 			} else {
 				mMouseLeftClick = Mouse;
 
-				mNewPos.x = static_cast<eeFloat>(mMouseLeftClick.x) - static_cast<eeFloat>(mMouseLeftStartClick.x);
-				mNewPos.y = static_cast<eeFloat>(mMouseLeftClick.y) - static_cast<eeFloat>(mMouseLeftStartClick.y);
+				mNewPos.x = static_cast<Float>(mMouseLeftClick.x) - static_cast<Float>(mMouseLeftStartClick.x);
+				mNewPos.y = static_cast<Float>(mMouseLeftClick.y) - static_cast<Float>(mMouseLeftStartClick.y);
 
 				if ( mNewPos.x != 0 || mNewPos.y != 0 ) {
 					mMouseLeftStartClick = Mouse;
@@ -719,11 +726,11 @@ void cApp::Input() {
 			} else {
 				mMouseMiddleClick = Mouse;
 
-				eeVector2f v1( (eeFloat)mMouseMiddleStartClick.x, (eeFloat)mMouseMiddleStartClick.y );
-				eeVector2f v2( eeVector2f( (eeFloat)mMouseMiddleClick.x, (eeFloat)mMouseMiddleClick.y ) );
-				eeLine2f l1( v1, v2 );
-				eeFloat Dist = v1.Distance( v2 ) * 0.01f;
-				eeFloat Ang = l1.GetAngle();
+				Vector2f v1( (Float)mMouseMiddleStartClick.x, (Float)mMouseMiddleStartClick.y );
+				Vector2f v2( Vector2f( (Float)mMouseMiddleClick.x, (Float)mMouseMiddleClick.y ) );
+				Line2f l1( v1, v2 );
+				Float Dist = v1.Distance( v2 ) * 0.01f;
+				Float Ang = l1.GetAngle();
 
 				if ( Dist ) {
 					mMouseMiddleStartClick = Mouse;
@@ -739,7 +746,7 @@ void cApp::Input() {
 		}
 
 		if ( KM->MouseRightPressed() ) {
-			eeLine2f line( eeVector2f( Mouse.x, Mouse.y ), eeVector2f( HWidth, HHeight ) );
+			Line2f line( Vector2f( Mouse.x, Mouse.y ), Vector2f( HWidth, HHeight ) );
 			mImg.Angle( line.GetAngle() );
 		}
 
@@ -775,7 +782,7 @@ void cApp::Input() {
 		}
 
 		if ( KM->IsKeyUp(KEY_A) ) {
-			cTexture * Tex = mImg.GetCurrentSubTexture()->GetTexture();
+			Texture * Tex = mImg.GetCurrentSubTexture()->GetTexture();
 
 			if ( Tex ) {
 				if ( Tex->Filter() == TEX_FILTER_LINEAR )
@@ -812,7 +819,7 @@ void cApp::Input() {
 		}
 
 		if ( KM->IsKeyUp(KEY_K) ) {
-			cTexture * curTex;
+			Texture * curTex;
 
 			if ( NULL != mImg.GetCurrentSubTexture() && NULL != ( curTex = mImg.GetCurrentSubTexture()->GetTexture() ) ) {
 				curTex->Mipmap( !curTex->Mipmap() );
@@ -851,7 +858,7 @@ void cApp::DoSlideShow() {
 
 void cApp::ScaleToScreen( const bool& force ) {
 	if ( mFiles.size() && mFiles[ mCurImg ].Tex ) {
-		cTexture* Tex = TF->GetTexture( mFiles[ mCurImg ].Tex );
+		Texture* Tex = TF->GetTexture( mFiles[ mCurImg ].Tex );
 
 		if ( NULL == Tex )
 			return;
@@ -866,22 +873,22 @@ void cApp::ScaleToScreen( const bool& force ) {
 
 void cApp::ZoomImage() {
 	if ( mFiles.size() && mFiles[ mCurImg ].Tex ) {
-		cTexture* Tex = TF->GetTexture( mFiles[ mCurImg ].Tex );
+		Texture* Tex = TF->GetTexture( mFiles[ mCurImg ].Tex );
 
 		if ( NULL == Tex )
 			return;
 
-		eeVector2f OldScale = mImg.Scale();
+		Vector2f OldScale = mImg.Scale();
 		mImg.Scale( 1.0f );
 		eeAABB mBox = mImg.GetAABB();
 		mImg.Scale( OldScale );
 
-		eeFloat iWidth = mBox.Right - mBox.Left;
-		eeFloat iHeight = mBox.Bottom - mBox.Top;
+		Float iWidth = mBox.Right - mBox.Left;
+		Float iHeight = mBox.Bottom - mBox.Top;
 
 		mImg.Scale( Width / iWidth );
 
-		eeFloat mScale2 = 1.f;
+		Float mScale2 = 1.f;
 		mScale2 = Height / iHeight;
 
 		if ( mScale2 < mImg.Scale().x )
@@ -914,13 +921,13 @@ void cApp::Render() {
 	if ( mFiles.size() && mFiles[ mCurImg ].Tex ) {
 		DoFade();
 
-		cTexture * Tex = mImg.GetCurrentSubTexture()->GetTexture();
+		Texture * Tex = mImg.GetCurrentSubTexture()->GetTexture();
 
 		if ( Tex ) {
-			eeFloat X = static_cast<eeFloat> ( static_cast<Int32> ( HWidth - mImg.Size().Width() * 0.5f ) );
-			eeFloat Y = static_cast<eeFloat> ( static_cast<Int32> ( HHeight - mImg.Size().Height() * 0.5f ) );
+			Float X = static_cast<Float> ( static_cast<Int32> ( HWidth - mImg.Size().Width() * 0.5f ) );
+			Float Y = static_cast<Float> ( static_cast<Int32> ( HHeight - mImg.Size().Height() * 0.5f ) );
 
-			mImg.Offset( eeVector2i( X, Y ) );
+			mImg.Offset( Vector2i( X, Y ) );
 			mImg.Alpha( mCurAlpha );
 			mImg.Draw();
 		}
@@ -954,13 +961,13 @@ void cApp::DoFade() {
 			mFading = false;
 		}
 
-		cTexture * Tex = NULL;
+		Texture * Tex = NULL;
 
 		if ( NULL != mOldImg.GetCurrentSubTexture() && ( Tex = mOldImg.GetCurrentSubTexture()->GetTexture() ) ) {
-			eeFloat X = static_cast<eeFloat> ( static_cast<Int32> ( HWidth - mOldImg.Size().Width() * 0.5f ) );
-			eeFloat Y = static_cast<eeFloat> ( static_cast<Int32> ( HHeight - mOldImg.Size().Height() * 0.5f ) );
+			Float X = static_cast<Float> ( static_cast<Int32> ( HWidth - mOldImg.Size().Width() * 0.5f ) );
+			Float Y = static_cast<Float> ( static_cast<Int32> ( HHeight - mOldImg.Size().Height() * 0.5f ) );
 
-			mOldImg.Offset( eeVector2i( X, Y ) );
+			mOldImg.Offset( Vector2i( X, Y ) );
 			mOldImg.Alpha( 255 - mCurAlpha );
 			mOldImg.Draw();
 		}
@@ -968,27 +975,27 @@ void cApp::DoFade() {
 }
 
 void cApp::End() {
-	cEngine::DestroySingleton();
+	Engine::DestroySingleton();
 }
 
 std::string cApp::CreateSavePath( const std::string & oriPath, Uint32 width, Uint32 height ) {
-	EE_SAVE_TYPE saveType = cImage::ExtensionToSaveType( FileSystem::FileExtension( oriPath ) );
+	EE_SAVE_TYPE saveType = Image::ExtensionToSaveType( FileSystem::FileExtension( oriPath ) );
 
 	if ( SAVE_TYPE_UNKNOWN == saveType ) {
 		saveType = SAVE_TYPE_PNG;
 	}
 
-	return FileSystem::FileRemoveExtension( oriPath ) + "-" + String::ToStr( width ) + "x" + String::ToStr( height ) + "." + cImage::SaveTypeToExtension( saveType );
+	return FileSystem::FileRemoveExtension( oriPath ) + "-" + String::ToStr( width ) + "x" + String::ToStr( height ) + "." + Image::SaveTypeToExtension( saveType );
 }
 
 EE_SAVE_TYPE cApp::GetPathSaveType( const std::string& path ) {
-	return cImage::ExtensionToSaveType( FileSystem::FileExtension( path ) );
+	return Image::ExtensionToSaveType( FileSystem::FileExtension( path ) );
 }
 
-void cApp::ScaleImg( const std::string& Path, const eeFloat& Scale ) {
+void cApp::ScaleImg( const std::string& Path, const Float& Scale ) {
 	int w, h, c;
 
-	if ( cImage::GetInfo( Path, &w, &h, &c ) && Scale > 0.f ) {
+	if ( Image::GetInfo( Path, &w, &h, &c ) && Scale > 0.f ) {
 		Int32 new_width		= static_cast<Int32>( w * Scale );
 		Int32 new_height	= static_cast<Int32>( h * Scale );
 
@@ -1002,7 +1009,7 @@ void cApp::ResizeImg( const std::string& Path, const Uint32& NewWidth, const Uin
 	if ( IsImage( Path ) ) {
 		std::string newPath( CreateSavePath( Path, NewWidth, NewHeight ) );
 
-		cImage img( Path );
+		Image img( Path );
 
 		img.Resize( NewWidth, NewHeight );
 
@@ -1014,9 +1021,9 @@ void cApp::ResizeImg( const std::string& Path, const Uint32& NewWidth, const Uin
 
 void cApp::ThumgnailImg( const std::string& Path, const Uint32& MaxWidth, const Uint32& MaxHeight ) {
 	if ( IsImage( Path ) ) {
-		cImage img( Path );
+		Image img( Path );
 
-		cImage * thumb = img.Thumbnail( MaxWidth, MaxHeight );
+		Image * thumb = img.Thumbnail( MaxWidth, MaxHeight );
 
 		if ( NULL != thumb ) {
 			std::string newPath( CreateSavePath( Path, thumb->Width(), thumb->Height() ) );
@@ -1030,7 +1037,7 @@ void cApp::ThumgnailImg( const std::string& Path, const Uint32& MaxWidth, const 
 	}
 }
 
-void cApp::BatchDir( const std::string& Path, const eeFloat& Scale ) {
+void cApp::BatchDir( const std::string& Path, const Float& Scale ) {
 	std::string iPath = Path;
 	std::vector<std::string> tmpFiles = FileSystem::FilesGetInPath( iPath );
 
@@ -1043,7 +1050,7 @@ void cApp::BatchDir( const std::string& Path, const eeFloat& Scale ) {
 	}
 }
 
-void cApp::BatchImgThumbnail( eeSize size, std::string dir, bool recursive ) {
+void cApp::BatchImgThumbnail( Sizei size, std::string dir, bool recursive ) {
 	FileSystem::DirPathAddSlashAtEnd( dir );
 
 	std::vector<std::string> files = FileSystem::FilesGetInPath( dir );
@@ -1058,14 +1065,14 @@ void cApp::BatchImgThumbnail( eeSize size, std::string dir, bool recursive ) {
 		} else {
 			int w, h, c;
 
-			if ( cImage::GetInfo( fpath, &w, &h, &c ) ) {
+			if ( Image::GetInfo( fpath, &w, &h, &c ) ) {
 				if ( w > size.Width() || h > size.Height() ) {
-					cImage img( fpath );
+					Image img( fpath );
 
-					cImage * thumb = img.Thumbnail( size.Width(), size.Height() );
+					Image * thumb = img.Thumbnail( size.Width(), size.Height() );
 
 					if ( NULL != thumb ) {
-						thumb->SaveToFile( fpath, cImage::ExtensionToSaveType( FileSystem::FileExtension( fpath ) ) );
+						thumb->SaveToFile( fpath, Image::ExtensionToSaveType( FileSystem::FileExtension( fpath ) ) );
 
 						Con.PushText( "Thumbnail created for '%s'. Old size %dx%d. New size %dx%d.", fpath.c_str(), img.Width(), img.Height(), thumb->Width(), thumb->Height() );
 
@@ -1165,9 +1172,9 @@ void cApp::CmdImgThumbnail( const std::vector < String >& params ) {
 void cApp::CmdImgScale( const std::vector < String >& params ) {
 	String Error( "Usage example: imgscale scale path_to_img" );
 	if ( params.size() >= 2 ) {
-		eeFloat Scale = 0;
+		Float Scale = 0;
 
-		bool Res = String::FromString<eeFloat>( Scale, params[1] );
+		bool Res = String::FromString<Float>( Scale, params[1] );
 
 		std::string myPath;
 
@@ -1192,9 +1199,9 @@ void cApp::CmdImgScale( const std::vector < String >& params ) {
 void cApp::CmdBatchImgResize( const std::vector < String >& params ) {
 	String Error( "Usage example: batchimgresize scale_value directory_to_resize_img ( if no dir is passed, it will use the current dir opened )" );
 	if ( params.size() >= 3 ) {
-		eeFloat Scale = 0;
+		Float Scale = 0;
 
-		bool Res = String::FromString<eeFloat>( Scale, params[1] );
+		bool Res = String::FromString<Float>( Scale, params[1] );
 
 		std::string myPath = params.size() >= 3 ? params[2].ToUtf8() : mFilePath;
 
@@ -1240,7 +1247,7 @@ void cApp::CmdBatchImgThumbnail( const std::vector < String >& params ) {
 
 		if ( Res1 && Res2 ) {
 			if ( FileSystem::IsDirectory( myPath ) ) {
-				BatchImgThumbnail( eeSize( max_width, max_height ), myPath, recursive );
+				BatchImgThumbnail( Sizei( max_width, max_height ), myPath, recursive );
 			} else {
 				Con.PushText( "Third argument is not a directory!" );
 			}
@@ -1274,7 +1281,7 @@ void cApp::CmdImgChangeFormat( const std::vector < String >& params ) {
 
 		Int32 x, y, c;
 
-		if ( cImage::GetInfo( myPath, &x, &y, &c ) ) {
+		if ( Image::GetInfo( myPath, &x, &y, &c ) ) {
 			std::string fPath 	= myPath;
 			std::string fExt	= FileSystem::FileExtension( fPath );
 
@@ -1286,10 +1293,10 @@ void cApp::CmdImgChangeFormat( const std::vector < String >& params ) {
 				else
 					fName = fPath + "." + toFormat;
 
-				EE_SAVE_TYPE saveType = cImage::ExtensionToSaveType( toFormat );
+				EE_SAVE_TYPE saveType = Image::ExtensionToSaveType( toFormat );
 
 				if ( SAVE_TYPE_UNKNOWN != saveType ) {
-					cImage * img = eeNew( cImage, ( fPath ) );
+					Image * img = eeNew( Image, ( fPath ) );
 					img->SaveToFile( fName, saveType );
 					eeSAFE_DELETE( img );
 
@@ -1335,10 +1342,10 @@ void cApp::CmdBatchImgChangeFormat( const std::vector < String >& params ) {
 					else
 						fName = fPath + "." + toFormat;
 
-					EE_SAVE_TYPE saveType = cImage::ExtensionToSaveType( toFormat );
+					EE_SAVE_TYPE saveType = Image::ExtensionToSaveType( toFormat );
 
 					if ( SAVE_TYPE_UNKNOWN != saveType ) {
-						cImage * img = eeNew( cImage, ( fPath ) );
+						Image * img = eeNew( Image, ( fPath ) );
 						img->SaveToFile( fPath, saveType );
 						eeSAFE_DELETE( img );
 
@@ -1431,7 +1438,7 @@ void cApp::CmdSetBackColor( const std::vector < String >& params ) {
 			bool Res3 = String::FromString<Int32>( B, params[3] );
 
 			if ( Res1 && Res2 && Res3 && ( R <= 255 && R >= 0 ) && ( G <= 255 && G >= 0 ) && ( B <= 255 && B >= 0 ) ) {
-				mWindow->BackColor( eeColor( R,G,B ) );
+				mWindow->BackColor( RGB( R,G,B ) );
 				Con.PushText( "setbackcolor applied" );
 				return;
 			}
@@ -1499,7 +1506,7 @@ void cApp::PrintHelp() {
 			HT += "Key HOME: Go to the first screenshot on the folder\n";
 			HT += "Key END: Go to the last screenshot on the folder";
 
-			mHelpCache = eeNew( cTextCache, ( Fon, HT ) );
+			mHelpCache = eeNew( TextCache, ( Fon, HT ) );
 		}
 
 		mHelpCache->Draw( Left, Height - Top - mHelpCache->GetTextHeight() );

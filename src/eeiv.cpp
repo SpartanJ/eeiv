@@ -7,7 +7,7 @@ EE_MAIN_FUNC int main(int argc, char *argv[]) {
 
 	eeDelete( MyApp );
 
-	cEngine::DestroySingleton();
+	Engine::DestroySingleton();
 
 	EE::MemoryManager::ShowResults();
 

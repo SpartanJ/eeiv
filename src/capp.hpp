@@ -38,15 +38,15 @@ class cApp {
 		void ClearTempDir();
 		void VideoResize();
 		void RestoreMouse();
-		void BatchDir( const std::string& Path, const eeFloat& Scale );
-		void ScaleImg( const std::string& Path, const eeFloat& Scale );
+		void BatchDir( const std::string& Path, const Float& Scale );
+		void ScaleImg( const std::string& Path, const Float& Scale );
 		void ResizeImg( const std::string& Path, const Uint32& NewWidth, const Uint32& NewHeight );
 		void ThumgnailImg( const std::string& Path, const Uint32& MaxWidth, const Uint32& MaxHeight );
 		void SwitchFade();
 		void DoSlideShow();
 		void CreateSlideShow( Uint32 time );
 		void DisableSlideShow();
-		void BatchImgThumbnail( eeSize size, std::string dir, bool recursive );
+		void BatchImgThumbnail( Sizei size, std::string dir, bool recursive );
 
 		void CmdLoadDir( const std::vector < String >& params );
 		void CmdLoadImg( const std::vector < String >& params );
@@ -68,28 +68,28 @@ class cApp {
 
 		EE_SAVE_TYPE GetPathSaveType( const std::string& path );
 
-		cEngine * EE;
-		cTextureFactory * TF;
-		cWindow * mWindow;
-		cLog * Log;
-		cInput * KM;
+		Engine * EE;
+		TextureFactory * TF;
+		Window::Window * mWindow;
+		System::Log * Log;
+		Window::Input * KM;
 
 		std::string MyPath;
 
-		cFont * Fon; //! Default App Font
-		cFont * Mon; //! Console App Font
+		Font * Fon; //! Default App Font
+		Font * Mon; //! Console App Font
 
-		cTTFFont * TTF, * TTFMon;
-		cTextureFont * TexF, * TexFMon;
+		TTFFont * TTF, * TTFMon;
+		TextureFont * TexF, * TexFMon;
 
-		cConsole Con; //! Console Instance
+		Console Con; //! Console Instance
 
-		eeVector2i Mouse; //! Mouse Position on Screen
-		eeDouble ET;	//! Elapsed Time Between Frames
-		eeDouble RET;	//! Relative Elapsed Time ( skip time in Input() )
+		Vector2i Mouse; //! Mouse Position on Screen
+		double ET;	//! Elapsed Time Between Frames
+		double RET;	//! Relative Elapsed Time ( skip time in Input() )
 
-		eeFloat Width, Height;		//! Width and Height of the Window
-		eeFloat HWidth, HHeight;	//! Half Width and Height of the Window
+		Float Width, Height;		//! Width and Height of the Window
+		Float HWidth, HHeight;	//! Half Width and Height of the Window
 
 		std::string SLASH; //! Default SLASH string
 
@@ -110,24 +110,24 @@ class cApp {
 		bool mShowInfo;
 
 		bool mFade, mFading;
-		eeFloat mAlpha;
+		Float mAlpha;
 		Uint8 mCurAlpha;
 
 		bool mLateLoading;
 		bool mLaterLoad;
 		Int32 mLastLaterTick;
 
-		cClock TEP;
+		Clock TEP;
 
 		bool mCursor;
 
-		cSprite mImg, mOldImg;
+		Sprite mImg, mOldImg;
 
 		bool mMouseLeftPressing;
-		eeVector2i mMouseLeftStartClick, mMouseLeftClick;
+		Vector2i mMouseLeftStartClick, mMouseLeftClick;
 
 		bool mMouseMiddlePressing;
-		eeVector2i mMouseMiddleStartClick, mMouseMiddleClick;
+		Vector2i mMouseMiddleStartClick, mMouseMiddleClick;
 
 		EE_RENDER_MODE mImgRT;
 
@@ -164,9 +164,9 @@ class cApp {
 		std::string mTmpPath;
 		bool mUsedTempDir;
 
-		cClock TE;
+		Clock TE;
 
-		cTextCache * mHelpCache;
+		TextCache * mHelpCache;
 
 		bool	mSlideShow;
 		Uint32	mSlideTime;
