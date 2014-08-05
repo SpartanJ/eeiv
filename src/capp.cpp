@@ -111,6 +111,7 @@ void cApp::LoadConfig() {
 		mConfig.TransitionTime = Ini.GetValueI( "Viewer", "TransitionTime", 200 );
 		mConfig.ConsoleFontSize = Ini.GetValueI( "Viewer", "ConsoleFontSize", 12 );
 		mConfig.AppFontSize = Ini.GetValueI( "Viewer", "AppFontSize", 12 );
+		mConfig.DefaultImageZoom = Ini.GetValueF( "Viewer", "DefaultImageZoom", 1 );
 	} else {
 		Ini.SetValueI( "Window", "Width", 1024 );
 		Ini.SetValueI( "Window", "Height", 768 );
@@ -130,6 +131,7 @@ void cApp::LoadConfig() {
 		Ini.SetValueI( "Viewer", "TransitionTime", 200 );
 		Ini.SetValueI( "Viewer", "ConsoleFontSize", 12 );
 		Ini.SetValueI( "Viewer", "AppFontSize", 12 );
+		Ini.SetValueI( "Viewer", "DefaultImageZoom", 1 );
 
 		if ( !FileSystem::IsDirectory( mStorePath ) )
 			FileSystem::MakeDir( mStorePath );
@@ -428,7 +430,7 @@ void cApp::SetImage( const Uint32& Tex, const std::string& path ) {
 
 		mImg.CreateStatic( Tex );
 		mImg.RenderMode( mImgRT );
-		mImg.Scale( 1.f );
+		mImg.Scale( mConfig.DefaultImageZoom );
 		mImg.Position( 0.0f, 0.0f );
 
 		if ( path != mFiles[ mCurImg ].Path )
@@ -496,7 +498,7 @@ void cApp::UnloadImage( const Uint32& img ) {
 
 void cApp::OptUpdate() {
 	mImg.CreateStatic( mFiles [ mCurImg ].Tex );
-	mImg.Scale( 1.f );
+	mImg.Scale( mConfig.DefaultImageZoom );
 	mImg.Position( 0.0f, 0.0f );
 
 	ScaleToScreen();
@@ -642,7 +644,7 @@ void cApp::Input() {
 		}
 
 		if ( KM->IsKeyUp(KEY_KP_DIVIDE) ) {
-			mImg.Scale( 1.f );
+			mImg.Scale( mConfig.DefaultImageZoom );
 		}
 
 		if ( KM->IsKeyUp(KEY_Z) ) {
@@ -794,7 +796,7 @@ void cApp::Input() {
 
 		if ( KM->IsKeyUp(KEY_M) ) {
 			mImg.Position( 0.0f,0.0f );
-			mImg.Scale( 1.f );
+			mImg.Scale( mConfig.DefaultImageZoom );
 			mImg.Angle( 0.f );
 			ScaleToScreen();
 
@@ -805,7 +807,7 @@ void cApp::Input() {
 
 		if ( KM->IsKeyUp(KEY_T) ) {
 			mImg.Position( 0.0f,0.0f );
-			mImg.Scale( 1.f );
+			mImg.Scale( mConfig.DefaultImageZoom );
 			mImg.Angle( 0.f );
 			ScaleToScreen();
 		}
@@ -863,10 +865,10 @@ void cApp::ScaleToScreen( const bool& force ) {
 		if ( NULL == Tex )
 			return;
 
-		if ( Tex->ImgWidth() >= Width || Tex->ImgHeight() >= Height ) {
+		if ( Tex->ImgWidth() * mConfig.DefaultImageZoom >= Width || Tex->ImgHeight() * mConfig.DefaultImageZoom >= Height ) {
 			ZoomImage();
 		} else if ( force ) {
-			mImg.Scale( 1.f );
+			mImg.Scale( mConfig.DefaultImageZoom );
 		}
 	}
 }
@@ -879,7 +881,7 @@ void cApp::ZoomImage() {
 			return;
 
 		Vector2f OldScale = mImg.Scale();
-		mImg.Scale( 1.0f );
+		mImg.Scale( 1.f );
 		eeAABB mBox = mImg.GetAABB();
 		mImg.Scale( OldScale );
 

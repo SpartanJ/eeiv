@@ -155,6 +155,7 @@ class cApp {
 			float TransitionTime;
 			int ConsoleFontSize;
 			int AppFontSize;
+			float DefaultImageZoom;
 		} sConfig;
 		sConfig mConfig;
 
