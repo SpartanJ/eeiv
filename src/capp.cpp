@@ -33,7 +33,7 @@ static bool IsImage( const std::string& path ) {
 	if ( !FileSystem::IsDirectory(mPath) && FileSystem::FileSize( mPath ) ) {
 		std::string File = mPath.substr( mPath.find_last_of("/\\") + 1 );
 		std::string Ext = File.substr( File.find_last_of(".") + 1 );
-		String::ToLower( Ext );
+		String::ToLowerInPlace( Ext );
 
 		if ( Ext == "png" || Ext == "tga" || Ext == "bmp" || Ext == "jpg" || Ext == "gif" || Ext == "jpeg" || Ext == "dds" || Ext == "psd" || Ext == "hdr" || Ext == "pic" || Ext == "pvr" || Ext == "pkm" )
 			return true;
@@ -49,20 +49,15 @@ cApp::cApp( int argc, char *argv[] ) :
 	Fon(NULL),
 	Mon(NULL),
 	mCurImg(0),
-	mShowInfo(true),
-	mFade(true),
 	mFading(false),
 	mAlpha(255),
 	mCurAlpha(255),
-	mLateLoading(true),
 	mLaterLoad(false),
 	mCursor(true),
 	mMouseLeftPressing(false),
 	mMouseMiddlePressing(false),
 	mImgRT(RN_NORMAL),
 	mShowHelp(false),
-	mBlockWheelSpeed(true),
-	mWheelBlockTime(333),
 	mFirstLoad(false),
 	mUsedTempDir(false),
 	mHelpCache( NULL ),
@@ -70,8 +65,8 @@ cApp::cApp( int argc, char *argv[] ) :
 	mSlideTime(4000),
 	mSlideTicks(Sys::GetTicks())
 {
-	mStorePath = Sys::GetConfigPath( "eeiv" ) + FileSystem::GetOSlash();
-	mTmpPath = mStorePath + "tmp" + FileSystem::GetOSlash();
+	mStorePath	= Sys::GetConfigPath( "eeiv" ) + FileSystem::GetOSlash();
+	mTmpPath	= mStorePath + "tmp" + FileSystem::GetOSlash();
 
 	std::string nstr;
 
@@ -89,7 +84,7 @@ cApp::~cApp() {
 
 void cApp::LoadConfig() {
 	std::string tPath = mStorePath + "eeiv.ini";
-	IniFile Ini( tPath );
+	Ini.LoadFromFile( tPath );
 
 	if ( FileSystem::FileExists( tPath ) ) {
 		Ini.ReadFile();
@@ -112,6 +107,7 @@ void cApp::LoadConfig() {
 		mConfig.ConsoleFontSize = Ini.GetValueI( "Viewer", "ConsoleFontSize", 12 );
 		mConfig.AppFontSize = Ini.GetValueI( "Viewer", "AppFontSize", 12 );
 		mConfig.DefaultImageZoom = Ini.GetValueF( "Viewer", "DefaultImageZoom", 1 );
+		mConfig.WheelBlockTime = Ini.GetValueI( "Viewer", "WheelBlockTime", 200 );
 	} else {
 		Ini.SetValueI( "Window", "Width", 1024 );
 		Ini.SetValueI( "Window", "Height", 768 );
@@ -132,6 +128,7 @@ void cApp::LoadConfig() {
 		Ini.SetValueI( "Viewer", "ConsoleFontSize", 12 );
 		Ini.SetValueI( "Viewer", "AppFontSize", 12 );
 		Ini.SetValueI( "Viewer", "DefaultImageZoom", 1 );
+		Ini.SetValueI( "Viewer", "WheelBlockTime", 200 );
 
 		if ( !FileSystem::IsDirectory( mStorePath ) )
 			FileSystem::MakeDir( mStorePath );
@@ -170,11 +167,6 @@ bool cApp::Init() {
 	mWindow = EE->CreateWindow( WindowSettings( mConfig.Width, mConfig.Height, "eeiv", Style, WindowBackend::Default, mConfig.BitColor, iconp ), ContextSettings( mConfig.VSync, GLv_default, mConfig.DoubleBuffering, 0, 0 ) );
 
 	if ( mWindow->Created() ) {
-		mFade = mConfig.Fade;
-		mLateLoading = mConfig.LateLoading;
-		mBlockWheelSpeed = mConfig.BlockWheelSpeed;
-		mShowInfo = mConfig.ShowInfo;
-
 		if ( mConfig.FrameLimit )
 			mWindow->FrameRateLimit(60);
 
@@ -286,7 +278,7 @@ void cApp::Process() {
 
 			RET = TEP.Elapsed().AsMilliseconds();
 
-			if ( mLateLoading && mLaterLoad ) {
+			if ( mConfig.LateLoading && mLaterLoad ) {
 				if ( Sys::GetTicks() - mLastLaterTick > mConfig.TransitionTime ) {
 					UpdateImages();
 					mLaterLoad = false;
@@ -299,6 +291,7 @@ void cApp::Process() {
 			}
 		} while( mWindow->Running() );
 	}
+
 	End();
 }
 
@@ -503,7 +496,7 @@ void cApp::OptUpdate() {
 
 	ScaleToScreen();
 
-	if ( mLateLoading ) {
+	if ( mConfig.LateLoading ) {
 		mLaterLoad = true;
 		mLastLaterTick = Sys::GetTicks();
 
@@ -548,15 +541,15 @@ void cApp::LoadPrevImage() {
 }
 
 void cApp::SwitchFade() {
-	if ( mFade ) {
+	if ( mConfig.Fade ) {
 		mAlpha = 255.0f;
 		mCurAlpha = 255;
 		mFading = false;
 	}
 
-	mFade = !mFade;
-	mLateLoading = !mLateLoading;
-	mBlockWheelSpeed = !mBlockWheelSpeed;
+	mConfig.Fade = !mConfig.Fade;
+	mConfig.LateLoading = !mConfig.LateLoading;
+	mConfig.BlockWheelSpeed = !mConfig.BlockWheelSpeed;
 }
 
 void cApp::Input() {
@@ -608,7 +601,7 @@ void cApp::Input() {
 
 	if ( !Con.Active() ) {
 		if ( KM->MouseWheelUp() || KM->IsKeyUp(KEY_PAGEUP) ) {
-			if ( !mBlockWheelSpeed || Sys::GetTicks() - mLastWheelUse > mWheelBlockTime ) {
+			if ( !mConfig.BlockWheelSpeed || Sys::GetTicks() - mLastWheelUse > mConfig.WheelBlockTime ) {
 				mLastWheelUse = Sys::GetTicks();
 				LoadPrevImage();
 				DisableSlideShow();
@@ -616,7 +609,7 @@ void cApp::Input() {
 		}
 
 		if ( KM->MouseWheelDown() || KM->IsKeyUp(KEY_PAGEDOWN) ) {
-			if ( !mBlockWheelSpeed || Sys::GetTicks() - mLastWheelUse > mWheelBlockTime ) {
+			if ( !mConfig.BlockWheelSpeed || Sys::GetTicks() - mLastWheelUse > mConfig.WheelBlockTime ) {
 				mLastWheelUse = Sys::GetTicks();
 				LoadNextImage();
 				DisableSlideShow();
@@ -624,7 +617,7 @@ void cApp::Input() {
 		}
 
 		if ( KM->IsKeyUp(KEY_I) ) {
-			mShowInfo = !mShowInfo;
+			mConfig.ShowInfo = !mConfig.ShowInfo;
 		}
 	}
 
@@ -935,7 +928,7 @@ void cApp::Render() {
 		}
 	}
 
-	if ( mShowInfo )
+	if ( mConfig.ShowInfo )
 		Fon->Draw( 0, 0 );
 
 	PrintHelp();
@@ -944,7 +937,7 @@ void cApp::Render() {
 }
 
 void cApp::CreateFade()  {
-	if ( mFade ) {
+	if ( mConfig.Fade ) {
 		mAlpha = 0.0f;
 		mCurAlpha = 0;
 		mFading = true;
@@ -953,7 +946,7 @@ void cApp::CreateFade()  {
 }
 
 void cApp::DoFade() {
-	if ( mFade && mFading ) {
+	if ( mConfig.Fade && mFading ) {
 		mAlpha += ( 255 * RET ) / mConfig.TransitionTime;
 		mCurAlpha = static_cast<Uint8> ( mAlpha );
 
@@ -977,6 +970,32 @@ void cApp::DoFade() {
 }
 
 void cApp::End() {
+	mConfig.Width			= EE->GetWidth();
+	mConfig.Height			= EE->GetHeight();
+	mConfig.MaximizeAtStart	= EE->GetCurrentWindow()->IsMaximized();
+
+	Ini.SetValueI( "Window", "Width", mConfig.Width );
+	Ini.SetValueI( "Window", "Height", mConfig.Height );
+	Ini.SetValueI( "Window", "BitColor", mConfig.BitColor );
+	Ini.SetValueI( "Window", "Windowed", mConfig.Windowed );
+	Ini.SetValueI( "Window", "Resizeable", mConfig.Resizeable );
+	Ini.SetValueI( "Window", "VSync", mConfig.VSync );
+	Ini.SetValueI( "Window", "DoubleBuffering", mConfig.DoubleBuffering );
+	Ini.SetValueI( "Window", "UseDesktopResolution", mConfig.UseDesktopResolution );
+	Ini.SetValueI( "Window", "NoFrame", mConfig.NoFrame );
+	Ini.SetValueI( "Window", "MaximizeAtStart", mConfig.MaximizeAtStart );
+	Ini.SetValueI( "Window", "FrameLimit", mConfig.FrameLimit );
+	Ini.SetValueI( "Viewer", "Fade", mConfig.Fade );
+	Ini.SetValueI( "Viewer", "LateLoading", mConfig.LateLoading );
+	Ini.SetValueI( "Viewer", "BlockWheelSpeed", mConfig.BlockWheelSpeed );
+	Ini.SetValueI( "Viewer", "ShowInfo", mConfig.ShowInfo );
+	Ini.SetValueI( "Viewer", "TransitionTime", mConfig.TransitionTime );
+	Ini.SetValueI( "Viewer", "ConsoleFontSize", mConfig.ConsoleFontSize );
+	Ini.SetValueI( "Viewer", "AppFontSize", mConfig.AppFontSize );
+	Ini.SetValueI( "Viewer", "DefaultImageZoom", mConfig.DefaultImageZoom );
+	Ini.SetValueI( "Viewer", "WheelBlockTime", mConfig.WheelBlockTime );
+
+	Ini.WriteFile();
 	Engine::DestroySingleton();
 }
 
@@ -1389,7 +1408,7 @@ void cApp::CmdSetBlockWheel( const std::vector < String >& params ) {
 		bool Res = String::FromString<Int32>( tInt, params[1] );
 
 		if ( Res && ( tInt == 0 || tInt == 1 ) ) {
-			mBlockWheelSpeed = (bool)tInt;
+			mConfig.BlockWheelSpeed = (bool)tInt;
 			Con.PushText( "setblockwheel " + String::ToStr(tInt) );
 		} else
 			Con.PushText( "Valid parameters are 0 or 1." );
@@ -1404,7 +1423,7 @@ void cApp::CmdSetLateLoading( const std::vector < String >& params ) {
 		bool Res = String::FromString<Int32>( tInt, params[1] );
 
 		if ( Res && ( tInt == 0 || tInt == 1 ) ) {
-			mLateLoading = (bool)tInt;
+			mConfig.LateLoading = (bool)tInt;
 			Con.PushText( "setlateloading " + String::ToStr(tInt) );
 		} else
 			Con.PushText( "Valid parameters are 0 or 1." );
@@ -1419,7 +1438,7 @@ void cApp::CmdSetImgFade( const std::vector < String >& params ) {
 		bool Res = String::FromString<Int32>( tInt, params[1] );
 
 		if ( Res && ( tInt == 0 || tInt == 1 ) ) {
-			mFade = (bool)tInt;
+			mConfig.Fade = (bool)tInt;
 			Con.PushText( "setimgfade " + String::ToStr(tInt) );
 		} else
 			Con.PushText( "Valid parameters are 0 or 1." );

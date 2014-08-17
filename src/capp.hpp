@@ -107,13 +107,10 @@ class cApp {
 
 		Int32 mCurImg;	//! Current Image Selected from mFile
 
-		bool mShowInfo;
-
-		bool mFade, mFading;
+		bool mFading;
 		Float mAlpha;
 		Uint8 mCurAlpha;
 
-		bool mLateLoading;
 		bool mLaterLoad;
 		Int32 mLastLaterTick;
 
@@ -133,8 +130,6 @@ class cApp {
 
 		Int32 mLastWheelUse;
 		bool mShowHelp;
-		bool mBlockWheelSpeed;
-		Uint16 mWheelBlockTime;
 
 		typedef struct {
 			Uint32 Width;
@@ -156,6 +151,7 @@ class cApp {
 			int ConsoleFontSize;
 			int AppFontSize;
 			float DefaultImageZoom;
+			Uint32 WheelBlockTime;
 		} sConfig;
 		sConfig mConfig;
 
@@ -172,6 +168,8 @@ class cApp {
 		bool	mSlideShow;
 		Uint32	mSlideTime;
 		Uint32	mSlideTicks;
+
+		IniFile Ini;
 };
 
 #endif
