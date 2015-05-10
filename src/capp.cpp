@@ -45,6 +45,10 @@ static bool IsImage( const std::string& path ) {
 	return false;
 }
 
+static bool IsHttpUrl( const std::string& path ) {
+	return path.substr(0,7) == "http://" || path.substr(0,8) == "https://";
+}
+
 cApp::cApp( int argc, char *argv[] ) :
 	Fon(NULL),
 	Mon(NULL),
@@ -210,6 +214,7 @@ bool cApp::Init() {
 				TTF->Load( fontsPath + "Arial.ttf", mConfig.AppFontSize, TTF_STYLE_NORMAL, 512, RGB(), 1, RGB(0,0,0) );
 				TTFMon->Load( fontsPath + "cour.ttf", mConfig.ConsoleFontSize, TTF_STYLE_NORMAL, 512, RGB(), 0, RGB(0,0,0) );
 			} else {
+				Log::instance()->Writef( "Fonts not found... closing." );
 				return false;
 			}
 
@@ -240,6 +245,7 @@ bool cApp::Init() {
 		Con.AddCommand( "imgscale", cb::Make1( this, &cApp::CmdImgScale ) );
 		Con.AddCommand( "imgthumbnail", cb::Make1( this, &cApp::CmdImgThumbnail ) );
 		Con.AddCommand( "slideshow", cb::Make1( this, &cApp::CmdSlideShow ) );
+		Con.AddCommand( "setzoom", cb::Make1( this, &cApp::CmdSetZoom ) );
 
 		PrepareFrame();
 		GetImages();
@@ -296,34 +302,44 @@ void cApp::Process() {
 }
 
 void cApp::LoadDir( const std::string& path, const bool& getimages ) {
+	std::string tmpFile;
+
 	if ( !FileSystem::IsDirectory( path ) ) {
 		if ( path.substr(0,7) == "file://" ) {
 			mFilePath = path.substr( 7 );
 			mFilePath = mFilePath.substr( 0, mFilePath.find_last_of( FileSystem::GetOSlash() ) );
-		} else if ( path.substr(0,7) == "http://" || path.substr(0,6) == "ftp://" || path.substr(0,8) == "https://" ) {
+			tmpFile = path.substr( path.find_last_of( FileSystem::GetOSlash() ) + 1 );
+		} else if ( IsHttpUrl( path ) ) {
 			mUsedTempDir = true;
 
 			if ( !FileSystem::IsDirectory( mTmpPath ) )
 				FileSystem::MakeDir( mTmpPath );
 
-			#if defined( EE_PLATFORM_POSIX )
-				std::string cmd = "wget -q -P \"" + mTmpPath + "\" \"" + path + "\"";
-				system( cmd.c_str() );
-			#elif EE_PLATFORM == EE_PLATFORM_WIN
+			URI uri( path );
+			Http http( uri.GetHost(), uri.GetPort() );
+			Http::Request request( uri.GetPathAndQuery() );
+			Http::Response response = http.SendRequest(request);
+
+			if ( response.GetStatus() == Http::Response::Ok ) {
+				if ( !FileSystem::FileWrite( mTmpPath + "tmpfile", reinterpret_cast<const Uint8*>( &response.GetBody()[0] ), response.GetBody().size() ) ) {
+					Con.PushText( "Couldn't write the downloaded image to disk." );
+
+					return;
+				}
+			} else {
+				Con.PushText( "Couldn't download the image from network." );
+
 				return;
-			#endif
+			}
 
 			mFilePath = mTmpPath;
+			tmpFile = "tmpfile";
 		} else {
 			mFilePath = path.substr( 0, path.find_last_of( FileSystem::GetOSlash() ) );
+			tmpFile = path.substr( path.find_last_of( FileSystem::GetOSlash() ) + 1 );
 		}
 
-		size_t res;
-		do {
-			res = mFilePath.find( "%20" );
-			if ( res != std::string::npos )
-				mFilePath.replace( res, 3, " " );
-		} while ( res != std::string::npos );
+		String::ReplaceAll( mFilePath, "%20", " " );
 
 		if ( mFilePath == "" ) {
 			#if EE_PLATFORM == EE_PLATFORM_WIN
@@ -334,8 +350,6 @@ void cApp::LoadDir( const std::string& path, const bool& getimages ) {
 		}
 
 		FileSystem::DirPathAddSlashAtEnd( mFilePath );
-
-		std::string tmpFile = path.substr( path.find_last_of( FileSystem::GetOSlash() ) + 1 );
 
 		if ( IsImage( mFilePath + tmpFile ) )
 			mFile = tmpFile;
@@ -992,7 +1006,7 @@ void cApp::End() {
 	Ini.SetValueI( "Viewer", "TransitionTime", mConfig.TransitionTime );
 	Ini.SetValueI( "Viewer", "ConsoleFontSize", mConfig.ConsoleFontSize );
 	Ini.SetValueI( "Viewer", "AppFontSize", mConfig.AppFontSize );
-	Ini.SetValueI( "Viewer", "DefaultImageZoom", mConfig.DefaultImageZoom );
+	Ini.SetValueF( "Viewer", "DefaultImageZoom", mConfig.DefaultImageZoom );
 	Ini.SetValueI( "Viewer", "WheelBlockTime", mConfig.WheelBlockTime );
 
 	Ini.WriteFile();
@@ -1473,7 +1487,7 @@ void cApp::CmdLoadImg( const std::vector < String >& params ) {
 	if ( params.size() >= 2 ) {
 		std::string myPath = params[1].ToUtf8();
 
-		if ( IsImage( myPath ) ) {
+		if ( IsImage( myPath ) || IsHttpUrl( myPath ) ) {
 			LoadDir( myPath );
 		} else
 			Con.PushText( "\"" + myPath + "\" is not an image path or the image is not supported." );
@@ -1493,6 +1507,21 @@ void cApp::CmdLoadDir( const std::vector < String >& params ) {
 		} else
 			Con.PushText( "If you want to load an image use loadimg. \"" + myPath + "\" is not a directory path." );
 	}
+}
+
+void cApp::CmdSetZoom( const std::vector < String >& params ) {
+	if ( params.size() >= 2 ) {
+		Float tFloat = 0;
+
+		bool Res = String::FromString<Float>( tFloat, params[1] );
+
+		if ( Res && tFloat >= 0 && tFloat <= 10 ) {
+			Con.PushText( "setzoom: zoom level " + String::ToStr( tFloat ) );
+			mImg.Scale( tFloat );
+		} else
+			Con.PushText( "setzoom: value out of range" );
+	} else
+		Con.PushText( "Expected some parameter" );
 }
 
 void cApp::PrintHelp() {

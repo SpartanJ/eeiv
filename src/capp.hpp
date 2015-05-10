@@ -63,6 +63,7 @@ class cApp {
 		void CmdImgScale( const std::vector < String >& params );
 		void CmdImgThumbnail( const std::vector < String >& params );
 		void CmdSlideShow( const std::vector < String >& params );
+		void CmdSetZoom( const std::vector < String >& params );
 
 		std::string CreateSavePath( const std::string& oriPath, Uint32 width, Uint32 height );
 
