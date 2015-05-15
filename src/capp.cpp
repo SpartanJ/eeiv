@@ -80,10 +80,6 @@ cApp::cApp( int argc, char *argv[] ) :
 		nstr.assign( argv[0] );
 
 	LoadDir( nstr, false );
-
-	if ( 0 == mFiles.size() && 0 == mFile.length() ) {
-		Con.Toggle();
-	}
 }
 
 cApp::~cApp() {
@@ -259,6 +255,10 @@ bool cApp::Init() {
 		} else {
 			if ( mFiles.size() )
 				FastLoadImage( 0 );
+		}
+
+		if ( 0 == mFiles.size() && 0 == mFile.length() ) {
+			Con.Toggle();
 		}
 
 		return true;
