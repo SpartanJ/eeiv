@@ -42,6 +42,7 @@ class cApp {
 		void ScaleImg( const std::string& Path, const Float& Scale );
 		void ResizeImg( const std::string& Path, const Uint32& NewWidth, const Uint32& NewHeight );
 		void ThumgnailImg( const std::string& Path, const Uint32& MaxWidth, const Uint32& MaxHeight );
+		void CenterCropImg( const std::string& Path, const Uint32& Width, const Uint32& Height );
 		void SwitchFade();
 		void DoSlideShow();
 		void CreateSlideShow( Uint32 time );
@@ -62,6 +63,7 @@ class cApp {
 		void CmdImgResize( const std::vector < String >& params );
 		void CmdImgScale( const std::vector < String >& params );
 		void CmdImgThumbnail( const std::vector < String >& params );
+		void CmdImgCenterCrop( const std::vector < String >& params );
 		void CmdSlideShow( const std::vector < String >& params );
 		void CmdSetZoom( const std::vector < String >& params );
 

@@ -244,6 +244,7 @@ bool cApp::Init() {
 		Con.AddCommand( "imgresize", cb::Make1( this, &cApp::CmdImgResize ) );
 		Con.AddCommand( "imgscale", cb::Make1( this, &cApp::CmdImgScale ) );
 		Con.AddCommand( "imgthumbnail", cb::Make1( this, &cApp::CmdImgThumbnail ) );
+		Con.AddCommand( "imgcentercrop", cb::Make1( this, &cApp::CmdImgCenterCrop) );
 		Con.AddCommand( "slideshow", cb::Make1( this, &cApp::CmdSlideShow ) );
 		Con.AddCommand( "setzoom", cb::Make1( this, &cApp::CmdSetZoom ) );
 
@@ -1076,6 +1077,64 @@ void cApp::ThumgnailImg( const std::string& Path, const Uint32& MaxWidth, const 
 	}
 }
 
+void cApp::CenterCropImg( const std::string& Path, const Uint32& Width, const Uint32& Height ) {
+	if ( IsImage( Path ) ) {
+		Image img( Path );
+
+		Sizei nSize;
+
+		double scale = 1.f;
+
+		if ( Width*Height < img.Width()*img.Height() ) {
+			scale = eemax( (double)Width / (double)img.Width(), (double)Height / (double)img.Height() );
+		} else {
+			scale = eemax( (double)img.Width() / (double)Width, (double)img.Height() / (double)Height );
+		}
+
+		nSize.x = Math::Round( img.Width() * scale );
+		nSize.y = Math::Round( img.Height() * scale );
+
+		if ( nSize.Width() == (int)Width - 1 || nSize.Width() == (int)Width + 1 ) {
+			nSize.x = (int)Width;
+		}
+
+		if ( nSize.Height() == (int)Height - 1 || nSize.Height() == (int)Height + 1 ) {
+			nSize.y = (int)Height;
+		}
+
+		img.Resize( nSize.Width(), nSize.Height() );
+
+		Image * croppedImg  = NULL;
+		Recti rect;
+
+		if ( img.Width() > Width ) {
+			rect.Left = ( img.Width() - Width ) / 2;
+			rect.Right = rect.Left + Width;
+			rect.Top = 0;
+			rect.Bottom = Height;
+		} else {
+			rect.Top = ( img.Height() - Height ) / 2;
+			rect.Bottom = rect.Top + Height;
+			rect.Left = 0;
+			rect.Right = Width;
+		}
+
+		croppedImg = img.Crop( rect );
+
+		if ( NULL != croppedImg ) {
+			std::string newPath( CreateSavePath( Path, croppedImg->Width(), croppedImg->Height() ) );
+
+			croppedImg->SaveToFile( newPath, GetPathSaveType( newPath ) );
+
+			eeSAFE_DELETE( croppedImg );
+		} else {
+			std::string newPath( CreateSavePath( Path, img.Width(), img.Height() ) );
+
+			img.SaveToFile( newPath, GetPathSaveType( newPath ) );
+		}
+	}
+}
+
 void cApp::BatchDir( const std::string& Path, const Float& Scale ) {
 	std::string iPath = Path;
 	std::vector<std::string> tmpFiles = FileSystem::FilesGetInPath( iPath );
@@ -1201,6 +1260,36 @@ void cApp::CmdImgThumbnail( const std::vector < String >& params ) {
 
 		if ( Res1 && Res2 )
 			ThumgnailImg( myPath, nWidth, nHeight );
+		else
+			Con.PushText( Error );
+	} else {
+		Con.PushText( Error );
+	}
+}
+
+void cApp::CmdImgCenterCrop( const std::vector < String >& params ) {
+	String Error( "Usage example: imgcentercrop width height path_to_img" );
+	if ( params.size() >= 3 ) {
+		Uint32 nWidth = 0;
+		Uint32 nHeight = 0;
+
+		bool Res1 = String::FromString<Uint32> ( nWidth, params[1] );
+		bool Res2 = String::FromString<Uint32> ( nHeight, params[2] );
+
+		std::string myPath;
+
+		if ( params.size() >= 4 ) {
+			myPath = params[3].ToUtf8();
+			if ( params.size() > 4 ) {
+				for ( Uint32 i = 4; i < params.size(); i++ )
+					myPath += " " + params[i].ToUtf8();
+			}
+		} else {
+			myPath = mFilePath + mFile;
+		}
+
+		if ( Res1 && Res2 )
+			CenterCropImg( myPath, nWidth, nHeight );
 		else
 			Con.PushText( Error );
 	} else {
