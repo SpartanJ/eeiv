@@ -168,7 +168,13 @@ bool cApp::Init() {
 		iconp = MyPath + "assets/icon/ee.png";
 	}
 
-	mWindow = EE->CreateWindow( WindowSettings( mConfig.Width, mConfig.Height, "eeiv", Style, WindowBackend::Default, mConfig.BitColor, iconp ), ContextSettings( mConfig.VSync, GLv_default, mConfig.DoubleBuffering, 0, 0 ) );
+	WindowSettings WinSettings	= EE->CreateWindowSettings( &Ini, "Window" );
+	ContextSettings ConSettings	= EE->CreateContextSettings( &Ini, "Window" );
+
+	WinSettings.Icon = iconp;
+	WinSettings.Caption = "eeiv";
+
+	mWindow = EE->CreateWindow( WinSettings, ConSettings );
 
 	if ( mWindow->Created() ) {
 		if ( mConfig.FrameLimit )
@@ -1018,14 +1024,14 @@ void cApp::End() {
 	Engine::DestroySingleton();
 }
 
-std::string cApp::CreateSavePath( const std::string & oriPath, Uint32 width, Uint32 height ) {
-	EE_SAVE_TYPE saveType = Image::ExtensionToSaveType( FileSystem::FileExtension( oriPath ) );
+std::string cApp::CreateSavePath( const std::string & oriPath, Uint32 width, Uint32 height, EE_SAVE_TYPE saveType ) {
+	EE_SAVE_TYPE type = saveType == SAVE_TYPE_UNKNOWN ? Image::ExtensionToSaveType( FileSystem::FileExtension( oriPath ) ) : saveType;
 
-	if ( SAVE_TYPE_UNKNOWN == saveType ) {
-		saveType = SAVE_TYPE_PNG;
+	if ( SAVE_TYPE_UNKNOWN == type ) {
+		type = SAVE_TYPE_PNG;
 	}
 
-	return FileSystem::FileRemoveExtension( oriPath ) + "-" + String::ToStr( width ) + "x" + String::ToStr( height ) + "." + Image::SaveTypeToExtension( saveType );
+	return FileSystem::FileRemoveExtension( oriPath ) + "-" + String::ToStr( width ) + "x" + String::ToStr( height ) + "." + Image::SaveTypeToExtension( type );
 }
 
 EE_SAVE_TYPE cApp::GetPathSaveType( const std::string& path ) {
@@ -1077,7 +1083,7 @@ void cApp::ThumgnailImg( const std::string& Path, const Uint32& MaxWidth, const 
 	}
 }
 
-void cApp::CenterCropImg( const std::string& Path, const Uint32& Width, const Uint32& Height ) {
+void cApp::CenterCropImg( const std::string& Path, const Uint32& Width, const Uint32& Height, EE_SAVE_TYPE saveType ) {
 	if ( IsImage( Path ) ) {
 		Image img( Path );
 
@@ -1122,15 +1128,17 @@ void cApp::CenterCropImg( const std::string& Path, const Uint32& Width, const Ui
 		croppedImg = img.Crop( rect );
 
 		if ( NULL != croppedImg ) {
-			std::string newPath( CreateSavePath( Path, croppedImg->Width(), croppedImg->Height() ) );
+			std::string newPath( CreateSavePath( Path, croppedImg->Width(), croppedImg->Height(), saveType ) );
+			EE_SAVE_TYPE type = SAVE_TYPE_UNKNOWN != saveType ? saveType : GetPathSaveType( newPath );
 
-			croppedImg->SaveToFile( newPath, GetPathSaveType( newPath ) );
+			croppedImg->SaveToFile( newPath, type );
 
 			eeSAFE_DELETE( croppedImg );
 		} else {
-			std::string newPath( CreateSavePath( Path, img.Width(), img.Height() ) );
+			std::string newPath( CreateSavePath( Path, img.Width(), img.Height(), saveType ) );
+			EE_SAVE_TYPE type = SAVE_TYPE_UNKNOWN != saveType ? saveType : GetPathSaveType( newPath );
 
-			img.SaveToFile( newPath, GetPathSaveType( newPath ) );
+			img.SaveToFile( newPath, type );
 		}
 	}
 }
@@ -1221,10 +1229,6 @@ void cApp::CmdImgResize( const std::vector < String >& params ) {
 
 		if ( params.size() >= 4 ) {
 			myPath = params[3].ToUtf8();
-			if ( params.size() > 4 ) {
-				for ( Uint32 i = 4; i < params.size(); i++ )
-					myPath += " " + params[i].ToUtf8();
-			}
 		} else
 			myPath = mFilePath + mFile;
 
@@ -1250,10 +1254,6 @@ void cApp::CmdImgThumbnail( const std::vector < String >& params ) {
 
 		if ( params.size() >= 4 ) {
 			myPath = params[3].ToUtf8();
-			if ( params.size() > 4 ) {
-				for ( Uint32 i = 4; i < params.size(); i++ )
-					myPath += " " + params[i].ToUtf8();
-			}
 		} else {
 			myPath = mFilePath + mFile;
 		}
@@ -1268,10 +1268,11 @@ void cApp::CmdImgThumbnail( const std::vector < String >& params ) {
 }
 
 void cApp::CmdImgCenterCrop( const std::vector < String >& params ) {
-	String Error( "Usage example: imgcentercrop width height path_to_img" );
+	String Error( "Usage example: imgcentercrop width height path_to_img format" );
 	if ( params.size() >= 3 ) {
 		Uint32 nWidth = 0;
 		Uint32 nHeight = 0;
+		EE_SAVE_TYPE saveType = SAVE_TYPE_UNKNOWN;
 
 		bool Res1 = String::FromString<Uint32> ( nWidth, params[1] );
 		bool Res2 = String::FromString<Uint32> ( nHeight, params[2] );
@@ -1280,16 +1281,16 @@ void cApp::CmdImgCenterCrop( const std::vector < String >& params ) {
 
 		if ( params.size() >= 4 ) {
 			myPath = params[3].ToUtf8();
+
 			if ( params.size() > 4 ) {
-				for ( Uint32 i = 4; i < params.size(); i++ )
-					myPath += " " + params[i].ToUtf8();
+				saveType = Image::ExtensionToSaveType( params[4] );
 			}
 		} else {
 			myPath = mFilePath + mFile;
 		}
 
 		if ( Res1 && Res2 )
-			CenterCropImg( myPath, nWidth, nHeight );
+			CenterCropImg( myPath, nWidth, nHeight, saveType );
 		else
 			Con.PushText( Error );
 	} else {
@@ -1308,12 +1309,9 @@ void cApp::CmdImgScale( const std::vector < String >& params ) {
 
 		if ( params.size() >= 3 ) {
 			myPath = params[2].ToUtf8();
-			if ( params.size() > 3 ) {
-				for ( Uint32 i = 3; i < params.size(); i++ )
-					myPath += " " + params[i].ToUtf8();
-			}
-		} else
+		} else {
 			myPath = mFilePath + mFile;
+		}
 
 		if ( Res )
 			ScaleImg( myPath, Scale );
@@ -1332,11 +1330,6 @@ void cApp::CmdBatchImgResize( const std::vector < String >& params ) {
 		bool Res = String::FromString<Float>( Scale, params[1] );
 
 		std::string myPath = params.size() >= 3 ? params[2].ToUtf8() : mFilePath;
-
-		if ( params.size() > 3 ) {
-			for ( Uint32 i = 3; i < params.size(); i++ )
-				myPath += " " + params[i].ToUtf8();
-		}
 
 		if ( Res ) {
 			if ( FileSystem::IsDirectory( myPath ) ) {
@@ -1364,12 +1357,7 @@ void cApp::CmdBatchImgThumbnail( const std::vector < String >& params ) {
 
 		std::string myPath = params.size() >= 4 ? params[3].ToUtf8() : mFilePath;
 
-		if ( params.size() > 4 && params[4] != "recursive" ) {
-			for ( Uint32 i = 4; i < params.size(); i++ )
-				myPath += " " + params[i].ToUtf8();
-		}
-
-		if ( params.size() > 4 && params[ params.size() - 1 ] == "recursive" ) {
+		if ( params.size() > 4 && params[4] == "recursive" ) {
 			recursive = true;
 		}
 
@@ -1395,14 +1383,10 @@ void cApp::CmdImgChangeFormat( const std::vector < String >& params ) {
 		std::string toFormat = params[1].ToUtf8();
 		std::string myPath;
 
-		if ( params.size() >= 3 )
+		if ( params.size() >= 3 ) {
 			myPath = params[2].ToUtf8();
-		else
+		} else {
 			myPath = mFilePath + mFile;
-
-		if ( params.size() > 3 ) {
-			for ( Uint32 i = 4; i < params.size(); i++ )
-				myPath += " " + params[i].ToUtf8();
 		}
 
 		std::string fromFormat = FileSystem::FileExtension( myPath );
@@ -1447,10 +1431,6 @@ void cApp::CmdBatchImgChangeFormat( const std::vector < String >& params ) {
 		std::string toFormat = params[2].ToUtf8();
 
 		std::string myPath = params.size() >= 4 ? params[3].ToUtf8() : mFilePath;
-		if ( params.size() > 3 ) {
-			for ( Uint32 i = 4; i < params.size(); i++ )
-				myPath += " " + params[i].ToUtf8();
-		}
 
 		if ( FileSystem::IsDirectory( myPath ) ) {
 			std::vector<std::string> tmpFiles = FileSystem::FilesGetInPath( myPath );
