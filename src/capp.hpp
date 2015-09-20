@@ -38,10 +38,10 @@ class cApp {
 		void ClearTempDir();
 		void VideoResize();
 		void RestoreMouse();
-		void BatchDir( const std::string& Path, const Float& Scale );
-		void ScaleImg( const std::string& Path, const Float& Scale );
-		void ResizeImg( const std::string& Path, const Uint32& NewWidth, const Uint32& NewHeight );
-		void ThumgnailImg( const std::string& Path, const Uint32& MaxWidth, const Uint32& MaxHeight );
+		void BatchImgScale( const std::string& Path, const Float& Scale );
+		void ScaleImg( const std::string& Path, const Float& Scale, EE_SAVE_TYPE saveType = SAVE_TYPE_UNKNOWN );
+		void ResizeImg( const std::string& Path, const Uint32& NewWidth, const Uint32& NewHeight, EE_SAVE_TYPE saveType = SAVE_TYPE_UNKNOWN );
+		void ThumgnailImg( const std::string& Path, const Uint32& MaxWidth, const Uint32& MaxHeight, EE_SAVE_TYPE saveType = SAVE_TYPE_UNKNOWN );
 		void CenterCropImg( const std::string& Path, const Uint32& Width, const Uint32& Height, EE_SAVE_TYPE saveType = SAVE_TYPE_UNKNOWN );
 		void SwitchFade();
 		void DoSlideShow();
@@ -56,7 +56,7 @@ class cApp {
 		void CmdSetLateLoading( const std::vector < String >& params );
 		void CmdSetBlockWheel( const std::vector < String >& params );
 		void CmdMoveTo( const std::vector < String >& params );
-		void CmdBatchImgResize( const std::vector < String >& params );
+		void CmdBatchImgScale( const std::vector < String >& params );
 		void CmdBatchImgChangeFormat( const std::vector < String >& params );
 		void CmdBatchImgThumbnail( const std::vector < String >& params );
 		void CmdImgChangeFormat( const std::vector < String >& params );
