@@ -73,9 +73,9 @@ class cApp {
 
 		Engine * EE;
 		TextureFactory * TF;
-		Window::Window * mWindow;
+		EE::Window::Window * mWindow;
 		System::Log * Log;
-		Window::Input * KM;
+		EE::Window::Input * KM;
 
 		std::string MyPath;
 
