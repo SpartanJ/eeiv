@@ -86,32 +86,36 @@ cApp::~cApp() {
 	ClearTempDir();
 }
 
+void cApp::GetConfig() {
+	mConfig.Width = Ini.GetValueI( "Window", "Width", 1024 );
+	mConfig.Height = Ini.GetValueI( "Window", "Height", 768 );
+	mConfig.BitColor = Ini.GetValueI( "Window", "BitColor", 32 );
+	mConfig.Windowed = Ini.GetValueB( "Window", "Windowed", true );
+	mConfig.Resizeable = Ini.GetValueB( "Window", "Resizeable", true );
+	mConfig.VSync = Ini.GetValueI( "Window", "VSync", true );
+	mConfig.DoubleBuffering = Ini.GetValueB( "Window", "DoubleBuffering", true );
+	mConfig.UseDesktopResolution = Ini.GetValueB( "Window", "UseDesktopResolution", false );
+	mConfig.NoFrame = Ini.GetValueB( "Window", "NoFrame", false );
+	mConfig.MaximizeAtStart = Ini.GetValueB( "Window", "MaximizeAtStart", true );
+	mConfig.FrameLimit = Ini.GetValueI( "Window", "FrameLimit", 0 );
+	mConfig.Fade = Ini.GetValueB( "Viewer", "Fade", true );
+	mConfig.LateLoading = Ini.GetValueB( "Viewer", "LateLoading", true );
+	mConfig.BlockWheelSpeed = Ini.GetValueB( "Viewer", "BlockWheelSpeed", true );
+	mConfig.ShowInfo = Ini.GetValueB( "Viewer", "ShowInfo", true );
+	mConfig.TransitionTime = Ini.GetValueI( "Viewer", "TransitionTime", 200 );
+	mConfig.ConsoleFontSize = Ini.GetValueI( "Viewer", "ConsoleFontSize", 12 );
+	mConfig.AppFontSize = Ini.GetValueI( "Viewer", "AppFontSize", 12 );
+	mConfig.DefaultImageZoom = Ini.GetValueF( "Viewer", "DefaultImageZoom", 1 );
+	mConfig.WheelBlockTime = Ini.GetValueI( "Viewer", "WheelBlockTime", 200 );
+}
+
 void cApp::LoadConfig() {
 	std::string tPath = mStorePath + "eeiv.ini";
 	Ini.LoadFromFile( tPath );
 
 	if ( FileSystem::FileExists( tPath ) ) {
 		Ini.ReadFile();
-		mConfig.Width = Ini.GetValueI( "Window", "Width", 1024 );
-		mConfig.Height = Ini.GetValueI( "Window", "Height", 768 );
-		mConfig.BitColor = Ini.GetValueI( "Window", "BitColor", 32 );
-		mConfig.Windowed = Ini.GetValueB( "Window", "Windowed", true );
-		mConfig.Resizeable = Ini.GetValueB( "Window", "Resizeable", true );
-		mConfig.VSync = Ini.GetValueI( "Window", "VSync", true );
-		mConfig.DoubleBuffering = Ini.GetValueB( "Window", "DoubleBuffering", true );
-		mConfig.UseDesktopResolution = Ini.GetValueB( "Window", "UseDesktopResolution", false );
-		mConfig.NoFrame = Ini.GetValueB( "Window", "NoFrame", false );
-		mConfig.MaximizeAtStart = Ini.GetValueB( "Window", "MaximizeAtStart", true );
-		mConfig.FrameLimit = Ini.GetValueI( "Window", "FrameLimit", 0 );
-		mConfig.Fade = Ini.GetValueB( "Viewer", "Fade", true );
-		mConfig.LateLoading = Ini.GetValueB( "Viewer", "LateLoading", true );
-		mConfig.BlockWheelSpeed = Ini.GetValueB( "Viewer", "BlockWheelSpeed", true );
-		mConfig.ShowInfo = Ini.GetValueB( "Viewer", "ShowInfo", true );
-		mConfig.TransitionTime = Ini.GetValueI( "Viewer", "TransitionTime", 200 );
-		mConfig.ConsoleFontSize = Ini.GetValueI( "Viewer", "ConsoleFontSize", 12 );
-		mConfig.AppFontSize = Ini.GetValueI( "Viewer", "AppFontSize", 12 );
-		mConfig.DefaultImageZoom = Ini.GetValueF( "Viewer", "DefaultImageZoom", 1 );
-		mConfig.WheelBlockTime = Ini.GetValueI( "Viewer", "WheelBlockTime", 200 );
+		GetConfig();
 	} else {
 		Ini.SetValueI( "Window", "Width", 1024 );
 		Ini.SetValueI( "Window", "Height", 768 );
@@ -138,7 +142,7 @@ void cApp::LoadConfig() {
 			FileSystem::MakeDir( mStorePath );
 
 		Ini.WriteFile();
-		LoadConfig();
+		GetConfig();
 	}
 }
 

@@ -34,6 +34,7 @@ class cApp {
 		void PrintHelp();
 		void LoadFirstImage();
 		void LoadLastImage();
+		void GetConfig();
 		void LoadConfig();
 		void ClearTempDir();
 		void VideoResize();
