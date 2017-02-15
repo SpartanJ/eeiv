@@ -10,7 +10,7 @@ static std::string GetWindowsPath() {
 	#ifdef UNICODE
 		wchar_t Buffer[1024];
 		GetWindowsDirectory( Buffer, 1024 );
-		return String( Buffer ).ToUtf8();
+		return String( Buffer ).toUtf8();
 	#else
 		char Buffer[1024];
 		GetWindowsDirectory( Buffer, 1024 );
@@ -30,10 +30,10 @@ static bool IsImage( const std::string& path ) {
 	if ( path.size() >= 7 && path.substr(0,7) == "file://" )
 		mPath = path.substr( 7 );
 
-	if ( !FileSystem::IsDirectory(mPath) && FileSystem::FileSize( mPath ) ) {
+	if ( !FileSystem::isDirectory(mPath) && FileSystem::fileSize( mPath ) ) {
 		std::string File = mPath.substr( mPath.find_last_of("/\\") + 1 );
 		std::string Ext = File.substr( File.find_last_of(".") + 1 );
-		String::ToLowerInPlace( Ext );
+		String::toLowerInPlace( Ext );
 
 		if ( Ext == "png" || Ext == "tga" || Ext == "bmp" || Ext == "jpg" || Ext == "gif" || Ext == "jpeg" || Ext == "dds" || Ext == "psd" || Ext == "hdr" || Ext == "pic" || Ext == "pvr" || Ext == "pkm" )
 			return true;
@@ -67,10 +67,10 @@ cApp::cApp( int argc, char *argv[] ) :
 	mHelpCache( NULL ),
 	mSlideShow(false),
 	mSlideTime(4000),
-	mSlideTicks(Sys::GetTicks())
+	mSlideTicks(Sys::getTicks())
 {
-	mStorePath	= Sys::GetConfigPath( "eeiv" ) + FileSystem::GetOSlash();
-	mTmpPath	= mStorePath + "tmp" + FileSystem::GetOSlash();
+	mStorePath	= Sys::getConfigPath( "eeiv" ) + FileSystem::getOSlash();
+	mTmpPath	= mStorePath + "tmp" + FileSystem::getOSlash();
 
 	std::string nstr;
 
@@ -87,61 +87,61 @@ cApp::~cApp() {
 }
 
 void cApp::GetConfig() {
-	mConfig.Width = Ini.GetValueI( "Window", "Width", 1024 );
-	mConfig.Height = Ini.GetValueI( "Window", "Height", 768 );
-	mConfig.BitColor = Ini.GetValueI( "Window", "BitColor", 32 );
-	mConfig.Windowed = Ini.GetValueB( "Window", "Windowed", true );
-	mConfig.Resizeable = Ini.GetValueB( "Window", "Resizeable", true );
-	mConfig.VSync = Ini.GetValueI( "Window", "VSync", true );
-	mConfig.DoubleBuffering = Ini.GetValueB( "Window", "DoubleBuffering", true );
-	mConfig.UseDesktopResolution = Ini.GetValueB( "Window", "UseDesktopResolution", false );
-	mConfig.NoFrame = Ini.GetValueB( "Window", "NoFrame", false );
-	mConfig.MaximizeAtStart = Ini.GetValueB( "Window", "MaximizeAtStart", true );
-	mConfig.FrameLimit = Ini.GetValueI( "Window", "FrameLimit", 0 );
-	mConfig.Fade = Ini.GetValueB( "Viewer", "Fade", true );
-	mConfig.LateLoading = Ini.GetValueB( "Viewer", "LateLoading", true );
-	mConfig.BlockWheelSpeed = Ini.GetValueB( "Viewer", "BlockWheelSpeed", true );
-	mConfig.ShowInfo = Ini.GetValueB( "Viewer", "ShowInfo", true );
-	mConfig.TransitionTime = Ini.GetValueI( "Viewer", "TransitionTime", 200 );
-	mConfig.ConsoleFontSize = Ini.GetValueI( "Viewer", "ConsoleFontSize", 12 );
-	mConfig.AppFontSize = Ini.GetValueI( "Viewer", "AppFontSize", 12 );
-	mConfig.DefaultImageZoom = Ini.GetValueF( "Viewer", "DefaultImageZoom", 1 );
-	mConfig.WheelBlockTime = Ini.GetValueI( "Viewer", "WheelBlockTime", 200 );
+	mConfig.Width = Ini.getValueI( "Window", "Width", 1024 );
+	mConfig.Height = Ini.getValueI( "Window", "Height", 768 );
+	mConfig.BitColor = Ini.getValueI( "Window", "BitColor", 32 );
+	mConfig.Windowed = Ini.getValueB( "Window", "Windowed", true );
+	mConfig.Resizeable = Ini.getValueB( "Window", "Resizeable", true );
+	mConfig.VSync = Ini.getValueI( "Window", "VSync", true );
+	mConfig.DoubleBuffering = Ini.getValueB( "Window", "DoubleBuffering", true );
+	mConfig.UseDesktopResolution = Ini.getValueB( "Window", "UseDesktopResolution", false );
+	mConfig.NoFrame = Ini.getValueB( "Window", "NoFrame", false );
+	mConfig.MaximizeAtStart = Ini.getValueB( "Window", "MaximizeAtStart", true );
+	mConfig.FrameLimit = Ini.getValueI( "Window", "FrameLimit", 0 );
+	mConfig.Fade = Ini.getValueB( "Viewer", "Fade", true );
+	mConfig.LateLoading = Ini.getValueB( "Viewer", "LateLoading", true );
+	mConfig.BlockWheelSpeed = Ini.getValueB( "Viewer", "BlockWheelSpeed", true );
+	mConfig.ShowInfo = Ini.getValueB( "Viewer", "ShowInfo", true );
+	mConfig.TransitionTime = Ini.getValueI( "Viewer", "TransitionTime", 200 );
+	mConfig.ConsoleFontSize = Ini.getValueI( "Viewer", "ConsoleFontSize", 12 );
+	mConfig.AppFontSize = Ini.getValueI( "Viewer", "AppFontSize", 12 );
+	mConfig.DefaultImageZoom = Ini.getValueF( "Viewer", "DefaultImageZoom", 1 );
+	mConfig.WheelBlockTime = Ini.getValueI( "Viewer", "WheelBlockTime", 200 );
 }
 
 void cApp::LoadConfig() {
 	std::string tPath = mStorePath + "eeiv.ini";
-	Ini.LoadFromFile( tPath );
+	Ini.loadFromFile( tPath );
 
-	if ( FileSystem::FileExists( tPath ) ) {
-		Ini.ReadFile();
+	if ( FileSystem::fileExists( tPath ) ) {
+		Ini.readFile();
 		GetConfig();
 	} else {
-		Ini.SetValueI( "Window", "Width", 1024 );
-		Ini.SetValueI( "Window", "Height", 768 );
-		Ini.SetValueI( "Window", "BitColor", 32);
-		Ini.SetValueI( "Window", "Windowed", 1 );
-		Ini.SetValueI( "Window", "Resizeable", 1 );
-		Ini.SetValueI( "Window", "VSync", 1 );
-		Ini.SetValueI( "Window", "DoubleBuffering", 1 );
-		Ini.SetValueI( "Window", "UseDesktopResolution", 0 );
-		Ini.SetValueI( "Window", "NoFrame", 0 );
-		Ini.SetValueI( "Window", "MaximizeAtStart", 1 );
-		Ini.SetValueI( "Window", "FrameLimit", 0 );
-		Ini.SetValueI( "Viewer", "Fade", 1 );
-		Ini.SetValueI( "Viewer", "LateLoading", 1 );
-		Ini.SetValueI( "Viewer", "BlockWheelSpeed", 1 );
-		Ini.SetValueI( "Viewer", "ShowInfo", 1 );
-		Ini.SetValueI( "Viewer", "TransitionTime", 200 );
-		Ini.SetValueI( "Viewer", "ConsoleFontSize", 12 );
-		Ini.SetValueI( "Viewer", "AppFontSize", 12 );
-		Ini.SetValueI( "Viewer", "DefaultImageZoom", 1 );
-		Ini.SetValueI( "Viewer", "WheelBlockTime", 200 );
+		Ini.setValueI( "Window", "Width", 1024 );
+		Ini.setValueI( "Window", "Height", 768 );
+		Ini.setValueI( "Window", "BitColor", 32);
+		Ini.setValueI( "Window", "Windowed", 1 );
+		Ini.setValueI( "Window", "Resizeable", 1 );
+		Ini.setValueI( "Window", "VSync", 1 );
+		Ini.setValueI( "Window", "DoubleBuffering", 1 );
+		Ini.setValueI( "Window", "UseDesktopResolution", 0 );
+		Ini.setValueI( "Window", "NoFrame", 0 );
+		Ini.setValueI( "Window", "MaximizeAtStart", 1 );
+		Ini.setValueI( "Window", "FrameLimit", 0 );
+		Ini.setValueI( "Viewer", "Fade", 1 );
+		Ini.setValueI( "Viewer", "LateLoading", 1 );
+		Ini.setValueI( "Viewer", "BlockWheelSpeed", 1 );
+		Ini.setValueI( "Viewer", "ShowInfo", 1 );
+		Ini.setValueI( "Viewer", "TransitionTime", 200 );
+		Ini.setValueI( "Viewer", "ConsoleFontSize", 12 );
+		Ini.setValueI( "Viewer", "AppFontSize", 12 );
+		Ini.setValueI( "Viewer", "DefaultImageZoom", 1 );
+		Ini.setValueI( "Viewer", "WheelBlockTime", 200 );
 
-		if ( !FileSystem::IsDirectory( mStorePath ) )
-			FileSystem::MakeDir( mStorePath );
+		if ( !FileSystem::isDirectory( mStorePath ) )
+			FileSystem::makeDir( mStorePath );
 
-		Ini.WriteFile();
+		Ini.writeFile();
 		GetConfig();
 	}
 }
@@ -150,7 +150,7 @@ bool cApp::Init() {
 	LoadConfig();
 
 	EE 		= Engine::instance();
-	MyPath 	= Sys::GetProcessPath();
+	MyPath 	= Sys::getProcessPath();
 
 	Uint32 Style = WindowStyle::Titlebar;
 
@@ -168,7 +168,7 @@ bool cApp::Init() {
 
 	std::string iconp( MyPath + "assets/eeiv.png" );
 
-	if ( !FileSystem::FileExists( iconp ) ) {
+	if ( !FileSystem::fileExists( iconp ) ) {
 		iconp = MyPath + "assets/icon/ee.png";
 	}
 
@@ -193,9 +193,9 @@ bool cApp::Init() {
 
 		Clock TE;
 
-		std::string MyFontPath = MyPath + "assets/fonts" + FileSystem::GetOSlash();
+		std::string MyFontPath = MyPath + "assets/fonts" + FileSystem::getOSlash();
 
-		if ( FileSystem::FileExists( MyFontPath + "DejaVuSans.dds" ) && FileSystem::FileExists( MyFontPath + "DejaVuSans.dat" ) && FileSystem::FileExists( MyFontPath + "DejaVuSansMono.dds" ) && FileSystem::FileExists( MyFontPath + "DejaVuSansMono.dat" ) ) {
+		if ( FileSystem::fileExists( MyFontPath + "DejaVuSans.dds" ) && FileSystem::fileExists( MyFontPath + "DejaVuSans.dat" ) && FileSystem::fileExists( MyFontPath + "DejaVuSansMono.dds" ) && FileSystem::fileExists( MyFontPath + "DejaVuSansMono.dat" ) ) {
 			TexF 	= TextureFont::New( "DejaVuSans" );
 			TexFMon = TextureFont::New( "DejaVuSansMono" );
 
@@ -214,17 +214,17 @@ bool cApp::Init() {
 			std::string fontsPath( "/usr/share/fonts/truetype/" );
 			#endif
 
-			if ( FileSystem::FileExists( fontsPath + "DejaVuSans.ttf" ) && FileSystem::FileExists( fontsPath + "DejaVuSansMono.ttf" ) ) {
+			if ( FileSystem::fileExists( fontsPath + "DejaVuSans.ttf" ) && FileSystem::fileExists( fontsPath + "DejaVuSansMono.ttf" ) ) {
 				TTF->Load( fontsPath + "DejaVuSans.ttf", mConfig.AppFontSize, TTF_STYLE_NORMAL, 512, RGB(), 1, RGB(0,0,0) );
 				TTFMon->Load( fontsPath + "DejaVuSansMono.ttf", mConfig.ConsoleFontSize, TTF_STYLE_NORMAL, 512, RGB(), 1, RGB(0,0,0) );
-			} else if ( FileSystem::FileExists( MyFontPath + "DejaVuSans.ttf" ) && FileSystem::FileExists( MyFontPath + "DejaVuSansMono.ttf" ) ) {
+			} else if ( FileSystem::fileExists( MyFontPath + "DejaVuSans.ttf" ) && FileSystem::fileExists( MyFontPath + "DejaVuSansMono.ttf" ) ) {
 				TTF->Load( MyFontPath + "DejaVuSans.ttf", mConfig.AppFontSize, TTF_STYLE_NORMAL, 512, RGB(), 1, RGB(0,0,0) );
 				TTFMon->Load( MyFontPath + "DejaVuSansMono.ttf", mConfig.ConsoleFontSize, TTF_STYLE_NORMAL, 512, RGB(), 1, RGB(0,0,0) );
-			} else if ( FileSystem::FileExists( fontsPath + "Arial.ttf" ) && FileSystem::FileExists( fontsPath + "cour.ttf" ) ) {
+			} else if ( FileSystem::fileExists( fontsPath + "Arial.ttf" ) && FileSystem::fileExists( fontsPath + "cour.ttf" ) ) {
 				TTF->Load( fontsPath + "Arial.ttf", mConfig.AppFontSize, TTF_STYLE_NORMAL, 512, RGB(), 1, RGB(0,0,0) );
 				TTFMon->Load( fontsPath + "cour.ttf", mConfig.ConsoleFontSize, TTF_STYLE_NORMAL, 512, RGB(), 0, RGB(0,0,0) );
 			} else {
-				Log::instance()->Writef( "Fonts not found... closing." );
+				Log::instance()->writef( "Fonts not found... closing." );
 				return false;
 			}
 
@@ -232,7 +232,7 @@ bool cApp::Init() {
 			Mon = reinterpret_cast<Font*> ( TTFMon );
 		}
 
-		Log::instance()->Writef( "Fonts loading time: %f ms", TE.Elapsed().AsMilliseconds() );
+		Log::instance()->writef( "Fonts loading time: %f ms", TE.elapsed().asMilliseconds() );
 
 		if ( !Fon && !Mon )
 			return false;
@@ -281,11 +281,11 @@ bool cApp::Init() {
 void cApp::Process() {
 	if ( Init() ) {
 		do {
-			ET = mWindow->Elapsed().AsMilliseconds();
+			ET = mWindow->Elapsed().asMilliseconds();
 
 			Input();
 
-			TEP.Restart();
+			TEP.restart();
 
 			if ( mWindow->Visible() ) {
 				Render();
@@ -294,13 +294,13 @@ void cApp::Process() {
 
 				mWindow->Display(true);
 			} else {
-				Sys::Sleep( 16 );
+				Sys::sleep( 16 );
 			}
 
-			RET = TEP.Elapsed().AsMilliseconds();
+			RET = TEP.elapsed().asMilliseconds();
 
 			if ( mConfig.LateLoading && mLaterLoad ) {
-				if ( Sys::GetTicks() - mLastLaterTick > mConfig.TransitionTime ) {
+				if ( Sys::getTicks() - mLastLaterTick > mConfig.TransitionTime ) {
 					UpdateImages();
 					mLaterLoad = false;
 				}
@@ -319,16 +319,16 @@ void cApp::Process() {
 void cApp::LoadDir( const std::string& path, const bool& getimages ) {
 	std::string tmpFile;
 
-	if ( !FileSystem::IsDirectory( path ) ) {
+	if ( !FileSystem::isDirectory( path ) ) {
 		if ( path.substr(0,7) == "file://" ) {
 			mFilePath = path.substr( 7 );
-			mFilePath = mFilePath.substr( 0, mFilePath.find_last_of( FileSystem::GetOSlash() ) );
-			tmpFile = path.substr( path.find_last_of( FileSystem::GetOSlash() ) + 1 );
+			mFilePath = mFilePath.substr( 0, mFilePath.find_last_of( FileSystem::getOSlash() ) );
+			tmpFile = path.substr( path.find_last_of( FileSystem::getOSlash() ) + 1 );
 		} else if ( IsHttpUrl( path ) ) {
 			mUsedTempDir = true;
 
-			if ( !FileSystem::IsDirectory( mTmpPath ) )
-				FileSystem::MakeDir( mTmpPath );
+			if ( !FileSystem::isDirectory( mTmpPath ) )
+				FileSystem::makeDir( mTmpPath );
 
 			URI uri( path );
 			Http http( uri.GetHost(), uri.GetPort() );
@@ -336,7 +336,7 @@ void cApp::LoadDir( const std::string& path, const bool& getimages ) {
 			Http::Response response = http.SendRequest(request);
 
 			if ( response.GetStatus() == Http::Response::Ok ) {
-				if ( !FileSystem::FileWrite( mTmpPath + "tmpfile", reinterpret_cast<const Uint8*>( &response.GetBody()[0] ), response.GetBody().size() ) ) {
+				if ( !FileSystem::fileWrite( mTmpPath + "tmpfile", reinterpret_cast<const Uint8*>( &response.GetBody()[0] ), response.GetBody().size() ) ) {
 					Con.PushText( "Couldn't write the downloaded image to disk." );
 
 					return;
@@ -350,21 +350,21 @@ void cApp::LoadDir( const std::string& path, const bool& getimages ) {
 			mFilePath = mTmpPath;
 			tmpFile = "tmpfile";
 		} else {
-			mFilePath = path.substr( 0, path.find_last_of( FileSystem::GetOSlash() ) );
-			tmpFile = path.substr( path.find_last_of( FileSystem::GetOSlash() ) + 1 );
+			mFilePath = path.substr( 0, path.find_last_of( FileSystem::getOSlash() ) );
+			tmpFile = path.substr( path.find_last_of( FileSystem::getOSlash() ) + 1 );
 		}
 
-		String::ReplaceAll( mFilePath, "%20", " " );
+		String::replaceAll( mFilePath, "%20", " " );
 
 		if ( mFilePath == "" ) {
 			#if EE_PLATFORM == EE_PLATFORM_WIN
 				mFilePath = "C:\\";
 			#else
-				mFilePath = FileSystem::GetOSlash();
+				mFilePath = FileSystem::getOSlash();
 			#endif
 		}
 
-		FileSystem::DirPathAddSlashAtEnd( mFilePath );
+		FileSystem::dirPathAddSlashAtEnd( mFilePath );
 
 		if ( IsImage( mFilePath + tmpFile ) )
 			mFile = tmpFile;
@@ -373,7 +373,7 @@ void cApp::LoadDir( const std::string& path, const bool& getimages ) {
 	} else {
 		mFilePath = path;
 
-		FileSystem::DirPathAddSlashAtEnd( mFilePath );
+		FileSystem::dirPathAddSlashAtEnd( mFilePath );
 	}
 
 	mCurImg = 0;
@@ -408,7 +408,7 @@ void cApp::GetImages() {
 	std::vector<std::string> tStr;
 	mFiles.clear();
 
-	std::vector<std::string> tmpFiles = FileSystem::FilesGetInPath( mFilePath );
+	std::vector<std::string> tmpFiles = FileSystem::filesGetInPath( mFilePath );
 	for ( i = 0; i < tmpFiles.size(); i++ )
 		if ( IsImage( mFilePath + tmpFiles[i] ) )
 			tStr.push_back( tmpFiles[i] );
@@ -423,11 +423,11 @@ void cApp::GetImages() {
 		mFiles.push_back( tmpI );
 	}
 
-	Con.PushText( "Image list loaded in %f ms.", TE.Elapsed().AsMilliseconds() );
+	Con.PushText( "Image list loaded in %f ms.", TE.elapsed().asMilliseconds() );
 
-	Con.PushText( "Directory: \"" + String::FromUtf8( mFilePath ) + "\"" );
+	Con.PushText( "Directory: \"" + String::fromUtf8( mFilePath ) + "\"" );
 	for ( Uint32 i = 0; i < mFiles.size(); i++ )
-		Con.PushText( "	" + String::FromUtf8( mFiles[i].Path ) );
+		Con.PushText( "	" + String::fromUtf8( mFiles[i].Path ) );
 }
 
 Uint32 cApp::CurImagePos( const std::string& path ) {
@@ -466,14 +466,14 @@ void cApp::SetImage( const Uint32& Tex, const std::string& path ) {
 
 		if ( NULL != pTex ) {
 			Fon->SetText(
-				"File: " + String::FromUtf8( mFile ) +
-				"\nWidth: " + String::ToStr( pTex->Width() ) +
-				"\nHeight: " + String::ToStr( pTex->Height() ) +
-				"\n" + String::ToStr( mCurImg+1 ) + "/" + String::ToStr( mFiles.size() )
+				"File: " + String::fromUtf8( mFile ) +
+				"\nWidth: " + String::toStr( pTex->Width() ) +
+				"\nHeight: " + String::toStr( pTex->Height() ) +
+				"\n" + String::toStr( mCurImg+1 ) + "/" + String::toStr( mFiles.size() )
 			);
 		}
 	} else {
-		Fon->SetText( "File: " + String::FromUtf8( path ) + " failed to load. \nReason: " + Image::GetLastFailureReason() );
+		Fon->SetText( "File: " + String::fromUtf8( path ) + " failed to load. \nReason: " + Image::GetLastFailureReason() );
 	}
 }
 
@@ -527,16 +527,16 @@ void cApp::OptUpdate() {
 
 	if ( mConfig.LateLoading ) {
 		mLaterLoad = true;
-		mLastLaterTick = Sys::GetTicks();
+		mLastLaterTick = Sys::getTicks();
 
 		Texture * Tex = TF->GetTexture( mFiles [ mCurImg ].Tex );
 
 		if ( Tex ) {
 			Fon->SetText(
-				"File: " + String::FromUtf8( mFiles [ mCurImg ].Path ) +
-				"\nWidth: " + String::ToStr( Tex->Width() ) +
-				"\nHeight: " + String::ToStr( Tex->Height() ) +
-				"\n" + String::ToStr( mCurImg + 1 ) + "/" + String::ToStr( mFiles.size() )
+				"File: " + String::fromUtf8( mFiles [ mCurImg ].Path ) +
+				"\nWidth: " + String::toStr( Tex->Width() ) +
+				"\nHeight: " + String::toStr( Tex->Height() ) +
+				"\n" + String::toStr( mCurImg + 1 ) + "/" + String::toStr( mFiles.size() )
 			);
 		}
 	} else
@@ -623,23 +623,23 @@ void cApp::Input() {
 	if ( ( ( KM->IsKeyUp(KEY_V) && KM->ControlPressed() ) || ( KM->IsKeyUp(KEY_INSERT) && KM->ShiftPressed() ) ) && !Con.Active() ) {
 		std::string tPath = mWindow->GetClipboard()->GetText();
 
-		if ( ( tPath.size() && IsImage( tPath ) ) || FileSystem::IsDirectory( tPath ) ) {
+		if ( ( tPath.size() && IsImage( tPath ) ) || FileSystem::isDirectory( tPath ) ) {
 			LoadDir( tPath );
 		}
 	}
 
 	if ( !Con.Active() ) {
 		if ( KM->MouseWheelUp() || KM->IsKeyUp(KEY_PAGEUP) ) {
-			if ( !mConfig.BlockWheelSpeed || Sys::GetTicks() - mLastWheelUse > mConfig.WheelBlockTime ) {
-				mLastWheelUse = Sys::GetTicks();
+			if ( !mConfig.BlockWheelSpeed || Sys::getTicks() - mLastWheelUse > mConfig.WheelBlockTime ) {
+				mLastWheelUse = Sys::getTicks();
 				LoadPrevImage();
 				DisableSlideShow();
 			}
 		}
 
 		if ( KM->MouseWheelDown() || KM->IsKeyUp(KEY_PAGEDOWN) ) {
-			if ( !mConfig.BlockWheelSpeed || Sys::GetTicks() - mLastWheelUse > mConfig.WheelBlockTime ) {
-				mLastWheelUse = Sys::GetTicks();
+			if ( !mConfig.BlockWheelSpeed || Sys::getTicks() - mLastWheelUse > mConfig.WheelBlockTime ) {
+				mLastWheelUse = Sys::getTicks();
 				LoadNextImage();
 				DisableSlideShow();
 			}
@@ -679,8 +679,8 @@ void cApp::Input() {
 			}
 		}
 
-		if ( Sys::GetTicks() - mZoomTicks >= 15 ) {
-			mZoomTicks = Sys::GetTicks();
+		if ( Sys::getTicks() - mZoomTicks >= 15 ) {
+			mZoomTicks = Sys::getTicks();
 
 			if ( KM->IsKeyDown(KEY_KP_MINUS) )
 				mImg.Scale( mImg.Scale() - 0.02f );
@@ -697,22 +697,22 @@ void cApp::Input() {
 		}
 
 		if ( KM->IsKeyDown(KEY_LEFT) ) {
-			mImg.X( ( mImg.X() + ( (mWindow->Elapsed().AsMilliseconds() * 0.4f) ) ) );
+			mImg.X( ( mImg.X() + ( (mWindow->Elapsed().asMilliseconds() * 0.4f) ) ) );
 			mImg.X( static_cast<Float> ( static_cast<Int32> ( mImg.X() ) ) );
 		}
 
 		if ( KM->IsKeyDown(KEY_RIGHT) ) {
-			mImg.X( ( mImg.X() + ( -(mWindow->Elapsed().AsMilliseconds() * 0.4f) ) ) );
+			mImg.X( ( mImg.X() + ( -(mWindow->Elapsed().asMilliseconds() * 0.4f) ) ) );
 			mImg.X( static_cast<Float> ( static_cast<Int32> ( mImg.X() ) ) );
 		}
 
 		if ( KM->IsKeyDown(KEY_UP) ) {
-			mImg.Y( ( mImg.Y() + ( (mWindow->Elapsed().AsMilliseconds() * 0.4f) ) ) );
+			mImg.Y( ( mImg.Y() + ( (mWindow->Elapsed().asMilliseconds() * 0.4f) ) ) );
 			mImg.Y( static_cast<Float> ( static_cast<Int32> ( mImg.Y() ) ) );
 		}
 
 		if ( KM->IsKeyDown(KEY_DOWN) ) {
-			mImg.Y( ( mImg.Y() + ( -(mWindow->Elapsed().AsMilliseconds() * 0.4f) ) ) );
+			mImg.Y( ( mImg.Y() + ( -(mWindow->Elapsed().asMilliseconds() * 0.4f) ) ) );
 			mImg.Y( static_cast<Float> ( static_cast<Int32> ( mImg.Y() ) ) );
 		}
 
@@ -859,7 +859,7 @@ void cApp::CreateSlideShow( Uint32 time ) {
 
 	mSlideShow	= true;
 	mSlideTime	= time;
-	mSlideTicks	= Sys::GetTicks();
+	mSlideTicks	= Sys::getTicks();
 }
 
 void cApp::DisableSlideShow() {
@@ -868,8 +868,8 @@ void cApp::DisableSlideShow() {
 
 void cApp::DoSlideShow() {
 	if ( mSlideShow ) {
-		if ( Sys::GetTicks() - mSlideTicks >= mSlideTime ) {
-			mSlideTicks = Sys::GetTicks();
+		if ( Sys::getTicks() - mSlideTicks >= mSlideTime ) {
+			mSlideTicks = Sys::getTicks();
 
 			if ( (Uint32)( mCurImg + 1 ) < mFiles.size() ) {
 				LoadNextImage();
@@ -914,8 +914,8 @@ void cApp::PrepareFrame() {
 	HWidth = Width * 0.5f;
 	HHeight = Height * 0.5f;
 
-	if (Sys::GetTicks() - mLastTicks >= 100) {
-		mLastTicks = Sys::GetTicks();
+	if (Sys::getTicks() - mLastTicks >= 100) {
+		mLastTicks = Sys::getTicks();
 		if ( mFiles.size() )
 			mInfo = "EEiv - " +  mFiles[ mCurImg ].Path;
 		else
@@ -991,43 +991,43 @@ void cApp::End() {
 	mConfig.Height			= EE->GetHeight();
 	mConfig.MaximizeAtStart	= EE->GetCurrentWindow()->IsMaximized();
 
-	Ini.SetValueI( "Window", "Width", mConfig.Width );
-	Ini.SetValueI( "Window", "Height", mConfig.Height );
-	Ini.SetValueI( "Window", "BitColor", mConfig.BitColor );
-	Ini.SetValueI( "Window", "Windowed", mConfig.Windowed );
-	Ini.SetValueI( "Window", "Resizeable", mConfig.Resizeable );
-	Ini.SetValueI( "Window", "VSync", mConfig.VSync );
-	Ini.SetValueI( "Window", "DoubleBuffering", mConfig.DoubleBuffering );
-	Ini.SetValueI( "Window", "UseDesktopResolution", mConfig.UseDesktopResolution );
-	Ini.SetValueI( "Window", "NoFrame", mConfig.NoFrame );
-	Ini.SetValueI( "Window", "MaximizeAtStart", mConfig.MaximizeAtStart );
-	Ini.SetValueI( "Window", "FrameLimit", mConfig.FrameLimit );
-	Ini.SetValueI( "Viewer", "Fade", mConfig.Fade );
-	Ini.SetValueI( "Viewer", "LateLoading", mConfig.LateLoading );
-	Ini.SetValueI( "Viewer", "BlockWheelSpeed", mConfig.BlockWheelSpeed );
-	Ini.SetValueI( "Viewer", "ShowInfo", mConfig.ShowInfo );
-	Ini.SetValueI( "Viewer", "TransitionTime", mConfig.TransitionTime );
-	Ini.SetValueI( "Viewer", "ConsoleFontSize", mConfig.ConsoleFontSize );
-	Ini.SetValueI( "Viewer", "AppFontSize", mConfig.AppFontSize );
-	Ini.SetValueF( "Viewer", "DefaultImageZoom", mConfig.DefaultImageZoom );
-	Ini.SetValueI( "Viewer", "WheelBlockTime", mConfig.WheelBlockTime );
+	Ini.setValueI( "Window", "Width", mConfig.Width );
+	Ini.setValueI( "Window", "Height", mConfig.Height );
+	Ini.setValueI( "Window", "BitColor", mConfig.BitColor );
+	Ini.setValueI( "Window", "Windowed", mConfig.Windowed );
+	Ini.setValueI( "Window", "Resizeable", mConfig.Resizeable );
+	Ini.setValueI( "Window", "VSync", mConfig.VSync );
+	Ini.setValueI( "Window", "DoubleBuffering", mConfig.DoubleBuffering );
+	Ini.setValueI( "Window", "UseDesktopResolution", mConfig.UseDesktopResolution );
+	Ini.setValueI( "Window", "NoFrame", mConfig.NoFrame );
+	Ini.setValueI( "Window", "MaximizeAtStart", mConfig.MaximizeAtStart );
+	Ini.setValueI( "Window", "FrameLimit", mConfig.FrameLimit );
+	Ini.setValueI( "Viewer", "Fade", mConfig.Fade );
+	Ini.setValueI( "Viewer", "LateLoading", mConfig.LateLoading );
+	Ini.setValueI( "Viewer", "BlockWheelSpeed", mConfig.BlockWheelSpeed );
+	Ini.setValueI( "Viewer", "ShowInfo", mConfig.ShowInfo );
+	Ini.setValueI( "Viewer", "TransitionTime", mConfig.TransitionTime );
+	Ini.setValueI( "Viewer", "ConsoleFontSize", mConfig.ConsoleFontSize );
+	Ini.setValueI( "Viewer", "AppFontSize", mConfig.AppFontSize );
+	Ini.setValueF( "Viewer", "DefaultImageZoom", mConfig.DefaultImageZoom );
+	Ini.setValueI( "Viewer", "WheelBlockTime", mConfig.WheelBlockTime );
 
-	Ini.WriteFile();
-	Engine::DestroySingleton();
+	Ini.writeFile();
+	Engine::destroySingleton();
 }
 
 std::string cApp::CreateSavePath( const std::string & oriPath, Uint32 width, Uint32 height, EE_SAVE_TYPE saveType ) {
-	EE_SAVE_TYPE type = saveType == SAVE_TYPE_UNKNOWN ? Image::ExtensionToSaveType( FileSystem::FileExtension( oriPath ) ) : saveType;
+	EE_SAVE_TYPE type = saveType == SAVE_TYPE_UNKNOWN ? Image::ExtensionToSaveType( FileSystem::fileExtension( oriPath ) ) : saveType;
 
 	if ( SAVE_TYPE_UNKNOWN == type ) {
 		type = SAVE_TYPE_PNG;
 	}
 
-	return FileSystem::FileRemoveExtension( oriPath ) + "-" + String::ToStr( width ) + "x" + String::ToStr( height ) + "." + Image::SaveTypeToExtension( type );
+	return FileSystem::fileRemoveExtension( oriPath ) + "-" + String::toStr( width ) + "x" + String::toStr( height ) + "." + Image::SaveTypeToExtension( type );
 }
 
 EE_SAVE_TYPE cApp::GetPathSaveType( const std::string& path ) {
-	return Image::ExtensionToSaveType( FileSystem::FileExtension( path ) );
+	return Image::ExtensionToSaveType( FileSystem::fileExtension( path ) );
 }
 
 void cApp::ScaleImg( const std::string& Path, const Float& Scale , EE_SAVE_TYPE saveType ) {
@@ -1139,7 +1139,7 @@ void cApp::CenterCropImg( const std::string& Path, const Uint32& Width, const Ui
 
 void cApp::BatchImgScale( const std::string& Path, const Float& Scale ) {
 	std::string iPath = Path;
-	std::vector<std::string> tmpFiles = FileSystem::FilesGetInPath( iPath );
+	std::vector<std::string> tmpFiles = FileSystem::filesGetInPath( iPath );
 
 	if ( iPath[ iPath.size() - 1 ] != '/' )
 		iPath += "/";
@@ -1151,14 +1151,14 @@ void cApp::BatchImgScale( const std::string& Path, const Float& Scale ) {
 }
 
 void cApp::BatchImgThumbnail( Sizei size, std::string dir, bool recursive ) {
-	FileSystem::DirPathAddSlashAtEnd( dir );
+	FileSystem::dirPathAddSlashAtEnd( dir );
 
-	std::vector<std::string> files = FileSystem::FilesGetInPath( dir );
+	std::vector<std::string> files = FileSystem::filesGetInPath( dir );
 
 	for ( size_t i = 0; i < files.size(); i++ ) {
 		std::string fpath( dir + files[i] );
 
-		if ( FileSystem::IsDirectory( fpath ) ) {
+		if ( FileSystem::isDirectory( fpath ) ) {
 			if ( recursive ) {
 				BatchImgThumbnail( size, fpath, recursive );
 			}
@@ -1171,7 +1171,7 @@ void cApp::BatchImgThumbnail( Sizei size, std::string dir, bool recursive ) {
 					Image * thumb = img.Thumbnail( size.Width(), size.Height() );
 
 					if ( NULL != thumb ) {
-						thumb->SaveToFile( fpath, Image::ExtensionToSaveType( FileSystem::FileExtension( fpath ) ) );
+						thumb->SaveToFile( fpath, Image::ExtensionToSaveType( FileSystem::fileExtension( fpath ) ) );
 
 						Con.PushText( "Thumbnail created for '%s'. Old size %dx%d. New size %dx%d.", fpath.c_str(), img.Width(), img.Height(), thumb->Width(), thumb->Height() );
 
@@ -1191,7 +1191,7 @@ void cApp::CmdSlideShow( const std::vector < String >& params ) {
 	if ( params.size() >= 2 ) {
 		Uint32 time = 0;
 
-		bool Res = String::FromString<Uint32> ( time, params[1] );
+		bool Res = String::fromString<Uint32> ( time, params[1] );
 
 		if ( Res ) {
 			if ( !mSlideShow ) {
@@ -1216,13 +1216,13 @@ void cApp::CmdImgResize( const std::vector < String >& params ) {
 		Uint32 nHeight = 0;
 		EE_SAVE_TYPE saveType = SAVE_TYPE_UNKNOWN;
 
-		bool Res1 = String::FromString<Uint32> ( nWidth, params[1] );
-		bool Res2 = String::FromString<Uint32> ( nHeight, params[2] );
+		bool Res1 = String::fromString<Uint32> ( nWidth, params[1] );
+		bool Res2 = String::fromString<Uint32> ( nHeight, params[2] );
 
 		std::string myPath;
 
 		if ( params.size() >= 4 ) {
-			myPath = params[3].ToUtf8();
+			myPath = params[3].toUtf8();
 
 			if ( params.size() > 4 ) {
 				saveType = Image::ExtensionToSaveType( params[4] );
@@ -1248,13 +1248,13 @@ void cApp::CmdImgThumbnail( const std::vector < String >& params ) {
 		Uint32 nHeight = 0;
 		EE_SAVE_TYPE saveType = SAVE_TYPE_UNKNOWN;
 
-		bool Res1 = String::FromString<Uint32> ( nWidth, params[1] );
-		bool Res2 = String::FromString<Uint32> ( nHeight, params[2] );
+		bool Res1 = String::fromString<Uint32> ( nWidth, params[1] );
+		bool Res2 = String::fromString<Uint32> ( nHeight, params[2] );
 
 		std::string myPath;
 
 		if ( params.size() >= 4 ) {
-			myPath = params[3].ToUtf8();
+			myPath = params[3].toUtf8();
 
 			if ( params.size() > 4 ) {
 				saveType = Image::ExtensionToSaveType( params[4] );
@@ -1280,13 +1280,13 @@ void cApp::CmdImgCenterCrop( const std::vector < String >& params ) {
 		Uint32 nHeight = 0;
 		EE_SAVE_TYPE saveType = SAVE_TYPE_UNKNOWN;
 
-		bool Res1 = String::FromString<Uint32> ( nWidth, params[1] );
-		bool Res2 = String::FromString<Uint32> ( nHeight, params[2] );
+		bool Res1 = String::fromString<Uint32> ( nWidth, params[1] );
+		bool Res2 = String::fromString<Uint32> ( nHeight, params[2] );
 
 		std::string myPath;
 
 		if ( params.size() >= 4 ) {
-			myPath = params[3].ToUtf8();
+			myPath = params[3].toUtf8();
 
 			if ( params.size() > 4 ) {
 				saveType = Image::ExtensionToSaveType( params[4] );
@@ -1310,12 +1310,12 @@ void cApp::CmdImgScale( const std::vector < String >& params ) {
 		Float Scale = 0;
 		EE_SAVE_TYPE saveType = SAVE_TYPE_UNKNOWN;
 
-		bool Res = String::FromString<Float>( Scale, params[1] );
+		bool Res = String::fromString<Float>( Scale, params[1] );
 
 		std::string myPath;
 
 		if ( params.size() >= 3 ) {
-			myPath = params[2].ToUtf8();
+			myPath = params[2].toUtf8();
 
 			if ( params.size() > 3 ) {
 				saveType = Image::ExtensionToSaveType( params[3] );
@@ -1338,12 +1338,12 @@ void cApp::CmdBatchImgScale( const std::vector < String >& params ) {
 	if ( params.size() >= 3 ) {
 		Float Scale = 0;
 
-		bool Res = String::FromString<Float>( Scale, params[1] );
+		bool Res = String::fromString<Float>( Scale, params[1] );
 
-		std::string myPath = params.size() >= 3 ? params[2].ToUtf8() : mFilePath;
+		std::string myPath = params.size() >= 3 ? params[2].toUtf8() : mFilePath;
 
 		if ( Res ) {
-			if ( FileSystem::IsDirectory( myPath ) ) {
+			if ( FileSystem::isDirectory( myPath ) ) {
 				BatchImgScale( myPath, Scale );
 			} else {
 				Con.PushText( "Second argument is not a directory!" );
@@ -1363,17 +1363,17 @@ void cApp::CmdBatchImgThumbnail( const std::vector < String >& params ) {
 		Uint32 max_width = 0, max_height = 0;
 		bool recursive = false;
 
-		bool Res1 = String::FromString<Uint32>( max_width, params[1] );
-		bool Res2 = String::FromString<Uint32>( max_height, params[2] );
+		bool Res1 = String::fromString<Uint32>( max_width, params[1] );
+		bool Res2 = String::fromString<Uint32>( max_height, params[2] );
 
-		std::string myPath = params.size() >= 4 ? params[3].ToUtf8() : mFilePath;
+		std::string myPath = params.size() >= 4 ? params[3].toUtf8() : mFilePath;
 
 		if ( params.size() > 4 && params[4] == "recursive" ) {
 			recursive = true;
 		}
 
 		if ( Res1 && Res2 ) {
-			if ( FileSystem::IsDirectory( myPath ) ) {
+			if ( FileSystem::isDirectory( myPath ) ) {
 				BatchImgThumbnail( Sizei( max_width, max_height ), myPath, recursive );
 			} else {
 				Con.PushText( "Third argument is not a directory!" );
@@ -1391,20 +1391,20 @@ void cApp::CmdBatchImgThumbnail( const std::vector < String >& params ) {
 void cApp::CmdImgChangeFormat( const std::vector < String >& params ) {
 	String Error( "Usage example: imgchangeformat to_format image_to_reformat ( if null will use the current loaded image )" );
 	if ( params.size() >= 2 ) {
-		std::string toFormat = params[1].ToUtf8();
+		std::string toFormat = params[1].toUtf8();
 		std::string myPath;
 
 		if ( params.size() >= 3 ) {
-			myPath = params[2].ToUtf8();
+			myPath = params[2].toUtf8();
 		} else {
 			myPath = mFilePath + mFile;
 		}
 
-		std::string fromFormat = FileSystem::FileExtension( myPath );
+		std::string fromFormat = FileSystem::fileExtension( myPath );
 
 		if ( Image::IsImage( myPath ) ) {
 			std::string fPath 	= myPath;
-			std::string fExt	= FileSystem::FileExtension( fPath );
+			std::string fExt	= FileSystem::fileExtension( fPath );
 
 			if ( fExt == fromFormat ) {
 				std::string fName;
@@ -1435,20 +1435,20 @@ void cApp::CmdImgChangeFormat( const std::vector < String >& params ) {
 void cApp::CmdBatchImgChangeFormat( const std::vector < String >& params ) {
 	String Error( "Usage example: batchimgchangeformat from_format to_format directory_to_reformat ( if no dir is passed, it will use the current dir opened )" );
 	if ( params.size() >= 4 ) {
-		std::string fromFormat = params[1].ToUtf8();
-		std::string toFormat = params[2].ToUtf8();
+		std::string fromFormat = params[1].toUtf8();
+		std::string toFormat = params[2].toUtf8();
 
-		std::string myPath = params.size() >= 4 ? params[3].ToUtf8() : mFilePath;
+		std::string myPath = params.size() >= 4 ? params[3].toUtf8() : mFilePath;
 
-		if ( FileSystem::IsDirectory( myPath ) ) {
-			std::vector<std::string> tmpFiles = FileSystem::FilesGetInPath( myPath );
+		if ( FileSystem::isDirectory( myPath ) ) {
+			std::vector<std::string> tmpFiles = FileSystem::filesGetInPath( myPath );
 
 			if ( myPath[ myPath.size() - 1 ] != '/' )
 				myPath += "/";
 
 			for ( Int32 i = 0; i < (Int32)tmpFiles.size(); i++ ) {
 				std::string fPath 	= myPath + tmpFiles[i];
-				std::string fExt	= FileSystem::FileExtension( fPath );
+				std::string fExt	= FileSystem::fileExtension( fPath );
 
 				if ( IsImage( fPath ) && fExt == fromFormat ) {
 					std::string fName;
@@ -1481,13 +1481,13 @@ void cApp::CmdMoveTo( const std::vector < String >& params ) {
 	if ( params.size() >= 2 ) {
 		Int32 tInt = 0;
 
-		bool Res = String::FromString<Int32>( tInt, params[1] );
+		bool Res = String::fromString<Int32>( tInt, params[1] );
 
 		if ( tInt )
 			tInt--;
 
 		if ( Res && tInt >= 0 && tInt < (Int32)mFiles.size() ) {
-			Con.PushText( "moveto: moving to image number " + String::ToStr( tInt + 1 ) );
+			Con.PushText( "moveto: moving to image number " + String::toStr( tInt + 1 ) );
 			FastLoadImage( tInt );
 		} else {
 			Con.PushText( "moveto: image number does not exists" );
@@ -1501,11 +1501,11 @@ void cApp::CmdSetBlockWheel( const std::vector < String >& params ) {
 	if ( params.size() >= 2 ) {
 		Int32 tInt = 0;
 
-		bool Res = String::FromString<Int32>( tInt, params[1] );
+		bool Res = String::fromString<Int32>( tInt, params[1] );
 
 		if ( Res && ( tInt == 0 || tInt == 1 ) ) {
 			mConfig.BlockWheelSpeed = (bool)tInt;
-			Con.PushText( "setblockwheel " + String::ToStr(tInt) );
+			Con.PushText( "setblockwheel " + String::toStr(tInt) );
 		} else
 			Con.PushText( "Valid parameters are 0 or 1." );
 	} else
@@ -1516,11 +1516,11 @@ void cApp::CmdSetLateLoading( const std::vector < String >& params ) {
 	if ( params.size() >= 2 ) {
 		Int32 tInt = 0;
 
-		bool Res = String::FromString<Int32>( tInt, params[1] );
+		bool Res = String::fromString<Int32>( tInt, params[1] );
 
 		if ( Res && ( tInt == 0 || tInt == 1 ) ) {
 			mConfig.LateLoading = (bool)tInt;
-			Con.PushText( "setlateloading " + String::ToStr(tInt) );
+			Con.PushText( "setlateloading " + String::toStr(tInt) );
 		} else
 			Con.PushText( "Valid parameters are 0 or 1." );
 	} else
@@ -1531,11 +1531,11 @@ void cApp::CmdSetImgFade( const std::vector < String >& params ) {
 	if ( params.size() >= 2 ) {
 		Int32 tInt = 0;
 
-		bool Res = String::FromString<Int32>( tInt, params[1] );
+		bool Res = String::fromString<Int32>( tInt, params[1] );
 
 		if ( Res && ( tInt == 0 || tInt == 1 ) ) {
 			mConfig.Fade = (bool)tInt;
-			Con.PushText( "setimgfade " + String::ToStr(tInt) );
+			Con.PushText( "setimgfade " + String::toStr(tInt) );
 		} else
 			Con.PushText( "Valid parameters are 0 or 1." );
 	} else
@@ -1548,11 +1548,11 @@ void cApp::CmdSetBackColor( const std::vector < String >& params ) {
 	if ( params.size() >= 2 ) {
 		if ( params.size() == 4 ) {
 			Int32 R = 0;
-			bool Res1 = String::FromString<Int32>( R, params[1] );
+			bool Res1 = String::fromString<Int32>( R, params[1] );
 			Int32 G = 0;
-			bool Res2 = String::FromString<Int32>( G, params[2] );
+			bool Res2 = String::fromString<Int32>( G, params[2] );
 			Int32 B = 0;
-			bool Res3 = String::FromString<Int32>( B, params[3] );
+			bool Res3 = String::fromString<Int32>( B, params[3] );
 
 			if ( Res1 && Res2 && Res3 && ( R <= 255 && R >= 0 ) && ( G <= 255 && G >= 0 ) && ( B <= 255 && B >= 0 ) ) {
 				mWindow->BackColor( RGB( R,G,B ) );
@@ -1567,7 +1567,7 @@ void cApp::CmdSetBackColor( const std::vector < String >& params ) {
 
 void cApp::CmdLoadImg( const std::vector < String >& params ) {
 	if ( params.size() >= 2 ) {
-		std::string myPath = params[1].ToUtf8();
+		std::string myPath = params[1].toUtf8();
 
 		if ( IsImage( myPath ) || IsHttpUrl( myPath ) ) {
 			LoadDir( myPath );
@@ -1578,13 +1578,13 @@ void cApp::CmdLoadImg( const std::vector < String >& params ) {
 
 void cApp::CmdLoadDir( const std::vector < String >& params ) {
 	if ( params.size() >= 2 ) {
-		std::string myPath = params[1].ToUtf8();
+		std::string myPath = params[1].toUtf8();
 		if ( params.size() > 2 ) {
 			for ( Uint32 i = 2; i < params.size(); i++ )
-				myPath += " " + params[i].ToUtf8();
+				myPath += " " + params[i].toUtf8();
 		}
 
-		if ( FileSystem::IsDirectory( myPath ) ) {
+		if ( FileSystem::isDirectory( myPath ) ) {
 			LoadDir( myPath );
 		} else
 			Con.PushText( "If you want to load an image use loadimg. \"" + myPath + "\" is not a directory path." );
@@ -1595,10 +1595,10 @@ void cApp::CmdSetZoom( const std::vector < String >& params ) {
 	if ( params.size() >= 2 ) {
 		Float tFloat = 0;
 
-		bool Res = String::FromString<Float>( tFloat, params[1] );
+		bool Res = String::fromString<Float>( tFloat, params[1] );
 
 		if ( Res && tFloat >= 0 && tFloat <= 10 ) {
-			Con.PushText( "setzoom: zoom level " + String::ToStr( tFloat ) );
+			Con.PushText( "setzoom: zoom level " + String::toStr( tFloat ) );
 			mImg.Scale( tFloat );
 		} else
 			Con.PushText( "setzoom: value out of range" );
@@ -1615,7 +1615,7 @@ void cApp::PrintHelp() {
 			String HT = "Keys List:\n";
 			HT += "Escape: Quit from EEiv\n";
 			HT += "ALT + RETURN or F: Toogle Fullscreen - Windowed\n";
-			HT += String::FromUtf8( "F3 or º: Toggle Console\n" );
+			HT += String::fromUtf8( "F3 or º: Toggle Console\n" );
 			HT += "F4 or S: Show/Hide Cursor\n";
 			HT += "Mouse Wheel Up or PageUp: Go to Previous Image\n";
 			HT += "Mouse Wheel Down or PageDown: Go to Next Image\n";
