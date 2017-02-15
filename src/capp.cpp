@@ -172,24 +172,24 @@ bool cApp::Init() {
 		iconp = MyPath + "assets/icon/ee.png";
 	}
 
-	WindowSettings WinSettings	= EE->CreateWindowSettings( &Ini, "Window" );
-	ContextSettings ConSettings	= EE->CreateContextSettings( &Ini, "Window" );
+	WindowSettings WinSettings	= EE->createWindowSettings( &Ini, "Window" );
+	ContextSettings ConSettings	= EE->createContextSettings( &Ini, "Window" );
 
 	WinSettings.Icon = iconp;
 	WinSettings.Caption = "eeiv";
 
-	mWindow = EE->CreateWindow( WinSettings, ConSettings );
+	mWindow = EE->createWindow( WinSettings, ConSettings );
 
-	if ( mWindow->Created() ) {
+	if ( mWindow->created() ) {
 		if ( mConfig.FrameLimit )
-			mWindow->FrameRateLimit(60);
+			mWindow->frameRateLimit(60);
 
 		TF 		= TextureFactory::instance();
 		Log 	= Log::instance();
-		KM 		= mWindow->GetInput();
+		KM 		= mWindow->getInput();
 
 		if ( mConfig.MaximizeAtStart )
-			mWindow->Maximize();
+			mWindow->maximize();
 
 		Clock TE;
 
@@ -281,18 +281,18 @@ bool cApp::Init() {
 void cApp::Process() {
 	if ( Init() ) {
 		do {
-			ET = mWindow->Elapsed().asMilliseconds();
+			ET = mWindow->elapsed().asMilliseconds();
 
 			Input();
 
 			TEP.restart();
 
-			if ( mWindow->Visible() ) {
+			if ( mWindow->visible() ) {
 				Render();
 
-				if ( KM->IsKeyUp(KEY_F12) ) mWindow->TakeScreenshot();
+				if ( KM->isKeyUp(KEY_F12) ) mWindow->takeScreenshot();
 
-				mWindow->Display(true);
+				mWindow->display(true);
 			} else {
 				Sys::sleep( 16 );
 			}
@@ -310,7 +310,7 @@ void cApp::Process() {
 				UpdateImages();
 				mFirstLoad = false;
 			}
-		} while( mWindow->Running() );
+		} while( mWindow->isRunning() );
 	}
 
 	End();
@@ -385,7 +385,7 @@ void cApp::LoadDir( const std::string& path, const bool& getimages ) {
 		if ( mFile.size() )
 			mCurImg = CurImagePos( mFile );
 
-		if ( mWindow->Running() )
+		if ( mWindow->isRunning() )
 			UpdateImages();
 	}
 }
@@ -582,46 +582,46 @@ void cApp::SwitchFade() {
 }
 
 void cApp::Input() {
-	KM->Update();
-	Mouse = KM->GetMousePos();
+	KM->update();
+	Mouse = KM->getMousePos();
 
-	if ( KM->IsKeyDown(KEY_TAB) && KM->AltPressed() ) {
-		mWindow->Minimize();
+	if ( KM->isKeyDown(KEY_TAB) && KM->altPressed() ) {
+		mWindow->minimize();
 	}
 
-	if ( KM->IsKeyDown(KEY_ESCAPE) || ( KM->IsKeyDown(KEY_Q) && !Con.Active() ) ) {
-		mWindow->Close();
+	if ( KM->isKeyDown(KEY_ESCAPE) || ( KM->isKeyDown(KEY_Q) && !Con.Active() ) ) {
+		mWindow->close();
 	}
 
-	if ( ( KM->AltPressed() && KM->IsKeyUp(KEY_RETURN) ) || ( KM->IsKeyUp(KEY_F) && !Con.Active() ) ) {
-		if ( mWindow->Windowed() )
-			mWindow->Size( mWindow->GetDesktopResolution().Width(), mWindow->GetDesktopResolution().Height(), false );
+	if ( ( KM->altPressed() && KM->isKeyUp(KEY_RETURN) ) || ( KM->isKeyUp(KEY_F) && !Con.Active() ) ) {
+		if ( mWindow->isWindowed() )
+			mWindow->size( mWindow->getDesktopResolution().width(), mWindow->getDesktopResolution().height(), false );
 		else
-			mWindow->ToggleFullscreen();
+			mWindow->toggleFullscreen();
 
 		PrepareFrame();
 		ScaleToScreen();
 	}
 
-	if ( KM->IsKeyUp(KEY_F5) ) {
+	if ( KM->isKeyUp(KEY_F5) ) {
 		SwitchFade();
 	}
 
-	if ( KM->IsKeyUp(KEY_F3) || KM->IsKeyUp(KEY_WORLD_26) ) {
+	if ( KM->isKeyUp(KEY_F3) || KM->isKeyUp(KEY_WORLD_26) ) {
 		Con.Toggle();
 	}
 
-	if ( ( KM->IsKeyUp(KEY_S) && !Con.Active() ) || KM->IsKeyUp(KEY_F4) ) {
+	if ( ( KM->isKeyUp(KEY_S) && !Con.Active() ) || KM->isKeyUp(KEY_F4) ) {
 		mCursor = !mCursor;
-		mWindow->GetCursorManager()->Visible( mCursor );
+		mWindow->getCursorManager()->visible( mCursor );
 	}
 
-	if ( KM->IsKeyUp(KEY_H) && !Con.Active() ) {
+	if ( KM->isKeyUp(KEY_H) && !Con.Active() ) {
 		mShowHelp = !mShowHelp;
 	}
 
-	if ( ( ( KM->IsKeyUp(KEY_V) && KM->ControlPressed() ) || ( KM->IsKeyUp(KEY_INSERT) && KM->ShiftPressed() ) ) && !Con.Active() ) {
-		std::string tPath = mWindow->GetClipboard()->GetText();
+	if ( ( ( KM->isKeyUp(KEY_V) && KM->controlPressed() ) || ( KM->isKeyUp(KEY_INSERT) && KM->shiftPressed() ) ) && !Con.Active() ) {
+		std::string tPath = mWindow->getClipboard()->getText();
 
 		if ( ( tPath.size() && IsImage( tPath ) ) || FileSystem::isDirectory( tPath ) ) {
 			LoadDir( tPath );
@@ -629,7 +629,7 @@ void cApp::Input() {
 	}
 
 	if ( !Con.Active() ) {
-		if ( KM->MouseWheelUp() || KM->IsKeyUp(KEY_PAGEUP) ) {
+		if ( KM->mouseWheelUp() || KM->isKeyUp(KEY_PAGEUP) ) {
 			if ( !mConfig.BlockWheelSpeed || Sys::getTicks() - mLastWheelUse > mConfig.WheelBlockTime ) {
 				mLastWheelUse = Sys::getTicks();
 				LoadPrevImage();
@@ -637,7 +637,7 @@ void cApp::Input() {
 			}
 		}
 
-		if ( KM->MouseWheelDown() || KM->IsKeyUp(KEY_PAGEDOWN) ) {
+		if ( KM->mouseWheelDown() || KM->isKeyUp(KEY_PAGEDOWN) ) {
 			if ( !mConfig.BlockWheelSpeed || Sys::getTicks() - mLastWheelUse > mConfig.WheelBlockTime ) {
 				mLastWheelUse = Sys::getTicks();
 				LoadNextImage();
@@ -645,48 +645,48 @@ void cApp::Input() {
 			}
 		}
 
-		if ( KM->IsKeyUp(KEY_I) ) {
+		if ( KM->isKeyUp(KEY_I) ) {
 			mConfig.ShowInfo = !mConfig.ShowInfo;
 		}
 	}
 
 	if ( mFiles.size() && mFiles[ mCurImg ].Tex && !Con.Active() ) {
-		if ( KM->IsKeyUp(KEY_HOME) ) {
+		if ( KM->isKeyUp(KEY_HOME) ) {
 			LoadFirstImage();
 			DisableSlideShow();
 		}
 
-		if ( KM->IsKeyUp(KEY_END) ) {
+		if ( KM->isKeyUp(KEY_END) ) {
 			LoadLastImage();
 			DisableSlideShow();
 		}
 
-		if ( KM->IsKeyUp(KEY_KP_MULTIPLY) ) {
+		if ( KM->isKeyUp(KEY_KP_MULTIPLY) ) {
 			ScaleToScreen();
 		}
 
-		if ( KM->IsKeyUp(KEY_KP_DIVIDE) ) {
+		if ( KM->isKeyUp(KEY_KP_DIVIDE) ) {
 			mImg.Scale( mConfig.DefaultImageZoom );
 		}
 
-		if ( KM->IsKeyUp(KEY_Z) ) {
+		if ( KM->isKeyUp(KEY_Z) ) {
 			ZoomImage();
 		}
 
-		if ( KM->IsKeyUp( KEY_N ) ) {
-			if ( mWindow->Size().Width() != (Int32)mImg.Size().Width() || mWindow->Size().Height() != (Int32)mImg.Size().Height() ) {
-				mWindow->Size( mImg.Size().Width(), mImg.Size().Height() );
+		if ( KM->isKeyUp( KEY_N ) ) {
+			if ( mWindow->size().width() != (Int32)mImg.Size().width() || mWindow->size().height() != (Int32)mImg.Size().height() ) {
+				mWindow->size( mImg.Size().width(), mImg.Size().height() );
 			}
 		}
 
 		if ( Sys::getTicks() - mZoomTicks >= 15 ) {
 			mZoomTicks = Sys::getTicks();
 
-			if ( KM->IsKeyDown(KEY_KP_MINUS) )
+			if ( KM->isKeyDown(KEY_KP_MINUS) )
 				mImg.Scale( mImg.Scale() - 0.02f );
 
 
-			if ( KM->IsKeyDown(KEY_KP_PLUS) )
+			if ( KM->isKeyDown(KEY_KP_PLUS) )
 				mImg.Scale( mImg.Scale() + 0.02f );
 
 			if ( mImg.Scale().x < 0.0125f )
@@ -696,31 +696,31 @@ void cApp::Input() {
 				mImg.Scale( 50.0f );
 		}
 
-		if ( KM->IsKeyDown(KEY_LEFT) ) {
-			mImg.X( ( mImg.X() + ( (mWindow->Elapsed().asMilliseconds() * 0.4f) ) ) );
+		if ( KM->isKeyDown(KEY_LEFT) ) {
+			mImg.X( ( mImg.X() + ( (mWindow->elapsed().asMilliseconds() * 0.4f) ) ) );
 			mImg.X( static_cast<Float> ( static_cast<Int32> ( mImg.X() ) ) );
 		}
 
-		if ( KM->IsKeyDown(KEY_RIGHT) ) {
-			mImg.X( ( mImg.X() + ( -(mWindow->Elapsed().asMilliseconds() * 0.4f) ) ) );
+		if ( KM->isKeyDown(KEY_RIGHT) ) {
+			mImg.X( ( mImg.X() + ( -(mWindow->elapsed().asMilliseconds() * 0.4f) ) ) );
 			mImg.X( static_cast<Float> ( static_cast<Int32> ( mImg.X() ) ) );
 		}
 
-		if ( KM->IsKeyDown(KEY_UP) ) {
-			mImg.Y( ( mImg.Y() + ( (mWindow->Elapsed().asMilliseconds() * 0.4f) ) ) );
+		if ( KM->isKeyDown(KEY_UP) ) {
+			mImg.Y( ( mImg.Y() + ( (mWindow->elapsed().asMilliseconds() * 0.4f) ) ) );
 			mImg.Y( static_cast<Float> ( static_cast<Int32> ( mImg.Y() ) ) );
 		}
 
-		if ( KM->IsKeyDown(KEY_DOWN) ) {
-			mImg.Y( ( mImg.Y() + ( -(mWindow->Elapsed().asMilliseconds() * 0.4f) ) ) );
+		if ( KM->isKeyDown(KEY_DOWN) ) {
+			mImg.Y( ( mImg.Y() + ( -(mWindow->elapsed().asMilliseconds() * 0.4f) ) ) );
 			mImg.Y( static_cast<Float> ( static_cast<Int32> ( mImg.Y() ) ) );
 		}
 
-		if ( KM->MouseLeftClick() ) {
+		if ( KM->mouseLeftClick() ) {
 			mMouseLeftPressing = false;
 		}
 
-		if ( KM->MouseLeftPressed() ) {
+		if ( KM->mouseLeftPressed() ) {
 			Vector2f mNewPos;
 			if ( !mMouseLeftPressing ) {
 				mMouseLeftStartClick = Mouse;
@@ -739,11 +739,11 @@ void cApp::Input() {
 			}
 		}
 
-		if ( KM->MouseMiddleClick() ) {
+		if ( KM->mouseMiddleClick() ) {
 			mMouseMiddlePressing = false;
 		}
 
-		if ( KM->MouseMiddlePressed() ) {
+		if ( KM->mouseMiddlePressed() ) {
 			if ( !mMouseMiddlePressing ) {
 				mMouseMiddleStartClick = Mouse;
 				mMouseMiddlePressing = true;
@@ -753,8 +753,8 @@ void cApp::Input() {
 				Vector2f v1( (Float)mMouseMiddleStartClick.x, (Float)mMouseMiddleStartClick.y );
 				Vector2f v2( Vector2f( (Float)mMouseMiddleClick.x, (Float)mMouseMiddleClick.y ) );
 				Line2f l1( v1, v2 );
-				Float Dist = v1.Distance( v2 ) * 0.01f;
-				Float Ang = l1.GetAngle();
+				Float Dist = v1.distance( v2 ) * 0.01f;
+				Float Ang = l1.getAngle();
 
 				if ( Dist ) {
 					mMouseMiddleStartClick = Mouse;
@@ -769,12 +769,12 @@ void cApp::Input() {
 			}
 		}
 
-		if ( KM->MouseRightPressed() ) {
+		if ( KM->mouseRightPressed() ) {
 			Line2f line( Vector2f( Mouse.x, Mouse.y ), Vector2f( HWidth, HHeight ) );
-			mImg.Angle( line.GetAngle() );
+			mImg.Angle( line.getAngle() );
 		}
 
-		if ( KM->IsKeyUp(KEY_X) ) {
+		if ( KM->isKeyUp(KEY_X) ) {
 			if ( mImgRT == RN_NORMAL )
 				mImgRT = RN_FLIP;
 			else if ( mImgRT == RN_MIRROR )
@@ -787,7 +787,7 @@ void cApp::Input() {
 			mImg.RenderMode( mImgRT );
 		}
 
-		if ( KM->IsKeyUp(KEY_C) ) {
+		if ( KM->isKeyUp(KEY_C) ) {
 			if ( mImgRT == RN_NORMAL )
 				mImgRT = RN_MIRROR;
 			else if ( mImgRT == RN_FLIP )
@@ -800,12 +800,12 @@ void cApp::Input() {
 			mImg.RenderMode( mImgRT );
 		}
 
-		if ( KM->IsKeyUp(KEY_R) ) {
+		if ( KM->isKeyUp(KEY_R) ) {
 			mImg.Angle( mImg.Angle() + 90.0f );
 			ScaleToScreen();
 		}
 
-		if ( KM->IsKeyUp(KEY_A) ) {
+		if ( KM->isKeyUp(KEY_A) ) {
 			Texture * Tex = mImg.GetCurrentSubTexture()->GetTexture();
 
 			if ( Tex ) {
@@ -816,33 +816,33 @@ void cApp::Input() {
 			}
 		}
 
-		if ( KM->IsKeyUp(KEY_M) ) {
+		if ( KM->isKeyUp(KEY_M) ) {
 			mImg.Position( 0.0f,0.0f );
 			mImg.Scale( mConfig.DefaultImageZoom );
 			mImg.Angle( 0.f );
 			ScaleToScreen();
 
-			if ( EE->GetCurrentWindow()->IsMaximized() ) {
-				EE->GetCurrentWindow()->Size( mImg.Size().Width(), mImg.Size().Height() );
+			if ( EE->getCurrentWindow()->isMaximized() ) {
+				EE->getCurrentWindow()->size( mImg.Size().width(), mImg.Size().height() );
 			}
 		}
 
-		if ( KM->IsKeyUp(KEY_T) ) {
+		if ( KM->isKeyUp(KEY_T) ) {
 			mImg.Position( 0.0f,0.0f );
 			mImg.Scale( mConfig.DefaultImageZoom );
 			mImg.Angle( 0.f );
 			ScaleToScreen();
 		}
 
-		if ( KM->IsKeyUp(KEY_E) ) {
+		if ( KM->isKeyUp(KEY_E) ) {
 			CreateSlideShow( mSlideTime );
 		}
 
-		if ( KM->IsKeyUp(KEY_D) ) {
+		if ( KM->isKeyUp(KEY_D) ) {
 			DisableSlideShow();
 		}
 
-		if ( KM->IsKeyUp(KEY_K) ) {
+		if ( KM->isKeyUp(KEY_K) ) {
 			Texture * curTex;
 
 			if ( NULL != mImg.GetCurrentSubTexture() && NULL != ( curTex = mImg.GetCurrentSubTexture()->GetTexture() ) ) {
@@ -904,13 +904,13 @@ void cApp::ZoomImage() {
 
 		Sizef boxSize = mImg.Size();
 
-		mImg.Scale( eemin( Width / boxSize.Width(), Height / boxSize.Height() ) );
+		mImg.Scale( eemin( Width / boxSize.width(), Height / boxSize.height() ) );
 	}
 }
 
 void cApp::PrepareFrame() {
-	Width = mWindow->GetWidth();
-	Height = mWindow->GetHeight();
+	Width = mWindow->getWidth();
+	Height = mWindow->getHeight();
 	HWidth = Width * 0.5f;
 	HHeight = Height * 0.5f;
 
@@ -921,7 +921,7 @@ void cApp::PrepareFrame() {
 		else
 			mInfo = "EEiv";
 
-		mWindow->Caption( mInfo );
+		mWindow->caption( mInfo );
 	}
 }
 
@@ -936,8 +936,8 @@ void cApp::Render() {
 		Texture * Tex = mImg.GetCurrentSubTexture()->GetTexture();
 
 		if ( Tex ) {
-			Float X = static_cast<Float> ( static_cast<Int32> ( HWidth - mImg.Size().Width() * 0.5f ) );
-			Float Y = static_cast<Float> ( static_cast<Int32> ( HHeight - mImg.Size().Height() * 0.5f ) );
+			Float X = static_cast<Float> ( static_cast<Int32> ( HWidth - mImg.Size().width() * 0.5f ) );
+			Float Y = static_cast<Float> ( static_cast<Int32> ( HHeight - mImg.Size().height() * 0.5f ) );
 
 			mImg.Offset( Vector2i( X, Y ) );
 			mImg.Alpha( mCurAlpha );
@@ -976,8 +976,8 @@ void cApp::DoFade() {
 		Texture * Tex = NULL;
 
 		if ( NULL != mOldImg.GetCurrentSubTexture() && ( Tex = mOldImg.GetCurrentSubTexture()->GetTexture() ) ) {
-			Float X = static_cast<Float> ( static_cast<Int32> ( HWidth - mOldImg.Size().Width() * 0.5f ) );
-			Float Y = static_cast<Float> ( static_cast<Int32> ( HHeight - mOldImg.Size().Height() * 0.5f ) );
+			Float X = static_cast<Float> ( static_cast<Int32> ( HWidth - mOldImg.Size().width() * 0.5f ) );
+			Float Y = static_cast<Float> ( static_cast<Int32> ( HHeight - mOldImg.Size().height() * 0.5f ) );
 
 			mOldImg.Offset( Vector2i( X, Y ) );
 			mOldImg.Alpha( 255 - mCurAlpha );
@@ -987,9 +987,9 @@ void cApp::DoFade() {
 }
 
 void cApp::End() {
-	mConfig.Width			= EE->GetWidth();
-	mConfig.Height			= EE->GetHeight();
-	mConfig.MaximizeAtStart	= EE->GetCurrentWindow()->IsMaximized();
+	mConfig.Width			= EE->getWidth();
+	mConfig.Height			= EE->getHeight();
+	mConfig.MaximizeAtStart	= EE->getCurrentWindow()->isMaximized();
 
 	Ini.setValueI( "Window", "Width", mConfig.Width );
 	Ini.setValueI( "Window", "Height", mConfig.Height );
@@ -1087,18 +1087,18 @@ void cApp::CenterCropImg( const std::string& Path, const Uint32& Width, const Ui
 
 		scale = eemax( (double)Width / (double)img.Width(), (double)Height / (double)img.Height() );
 
-		nSize.x = Math::Round( img.Width() * scale );
-		nSize.y = Math::Round( img.Height() * scale );
+		nSize.x = Math::round( img.Width() * scale );
+		nSize.y = Math::round( img.Height() * scale );
 
-		if ( nSize.Width() == (int)Width - 1 || nSize.Width() == (int)Width + 1 ) {
+		if ( nSize.width() == (int)Width - 1 || nSize.width() == (int)Width + 1 ) {
 			nSize.x = (int)Width;
 		}
 
-		if ( nSize.Height() == (int)Height - 1 || nSize.Height() == (int)Height + 1 ) {
+		if ( nSize.height() == (int)Height - 1 || nSize.height() == (int)Height + 1 ) {
 			nSize.y = (int)Height;
 		}
 
-		img.Resize( nSize.Width(), nSize.Height() );
+		img.Resize( nSize.width(), nSize.height() );
 
 		Image * croppedImg  = NULL;
 		Recti rect;
@@ -1161,10 +1161,10 @@ void cApp::BatchImgThumbnail( Sizei size, std::string dir, bool recursive ) {
 		} else {
 			int w, h, c;
 			if ( Image::GetInfo( fpath, &w, &h, &c ) ) {
-				if ( w > size.Width() || h > size.Height() ) {
+				if ( w > size.width() || h > size.height() ) {
 					Image img( fpath );
 
-					Image * thumb = img.Thumbnail( size.Width(), size.Height() );
+					Image * thumb = img.Thumbnail( size.width(), size.height() );
 
 					if ( NULL != thumb ) {
 						thumb->SaveToFile( fpath, Image::ExtensionToSaveType( FileSystem::fileExtension( fpath ) ) );
@@ -1551,7 +1551,7 @@ void cApp::CmdSetBackColor( const std::vector < String >& params ) {
 			bool Res3 = String::fromString<Int32>( B, params[3] );
 
 			if ( Res1 && Res2 && Res3 && ( R <= 255 && R >= 0 ) && ( G <= 255 && G >= 0 ) && ( B <= 255 && B >= 0 ) ) {
-				mWindow->BackColor( RGB( R,G,B ) );
+				mWindow->backColor( RGB( R,G,B ) );
 				Con.PushText( "setbackcolor applied" );
 				return;
 			}
