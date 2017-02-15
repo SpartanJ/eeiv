@@ -331,12 +331,12 @@ void cApp::LoadDir( const std::string& path, const bool& getimages ) {
 				FileSystem::makeDir( mTmpPath );
 
 			URI uri( path );
-			Http http( uri.GetHost(), uri.GetPort() );
-			Http::Request request( uri.GetPathAndQuery() );
-			Http::Response response = http.SendRequest(request);
+			Http http( uri.getHost(), uri.getPort() );
+			Http::Request request( uri.getPathAndQuery() );
+			Http::Response response = http.sendRequest(request);
 
-			if ( response.GetStatus() == Http::Response::Ok ) {
-				if ( !FileSystem::fileWrite( mTmpPath + "tmpfile", reinterpret_cast<const Uint8*>( &response.GetBody()[0] ), response.GetBody().size() ) ) {
+			if ( response.getStatus() == Http::Response::Ok ) {
+				if ( !FileSystem::fileWrite( mTmpPath + "tmpfile", reinterpret_cast<const Uint8*>( &response.getBody()[0] ), response.getBody().size() ) ) {
 					Con.PushText( "Couldn't write the downloaded image to disk." );
 
 					return;
@@ -1085,11 +1085,7 @@ void cApp::CenterCropImg( const std::string& Path, const Uint32& Width, const Ui
 
 		double scale = 1.f;
 
-		if ( Width*Height < img.Width()*img.Height() ) {
-			scale = eemax( (double)Width / (double)img.Width(), (double)Height / (double)img.Height() );
-		} else {
-			scale = eemax( (double)img.Width() / (double)Width, (double)img.Height() / (double)Height );
-		}
+		scale = eemax( (double)Width / (double)img.Width(), (double)Height / (double)img.Height() );
 
 		nSize.x = Math::Round( img.Width() * scale );
 		nSize.y = Math::Round( img.Height() * scale );
