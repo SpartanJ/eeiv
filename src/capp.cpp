@@ -180,9 +180,9 @@ bool cApp::Init() {
 
 	mWindow = EE->createWindow( WinSettings, ConSettings );
 
-	if ( mWindow->created() ) {
+	if ( mWindow->isOpen() ) {
 		if ( mConfig.FrameLimit )
-			mWindow->frameRateLimit(60);
+			mWindow->setFrameRateLimit(60);
 
 		TF 		= TextureFactory::instance();
 		Log 	= Log::instance();
@@ -232,7 +232,7 @@ bool cApp::Init() {
 			Mon = reinterpret_cast<Font*> ( TTFMon );
 		}
 
-		Log::instance()->writef( "Fonts loading time: %f ms", TE.elapsed().asMilliseconds() );
+		Log::instance()->writef( "Fonts loading time: %f ms", TE.getElapsed().asMilliseconds() );
 
 		if ( !Fon && !Mon )
 			return false;
@@ -281,13 +281,13 @@ bool cApp::Init() {
 void cApp::Process() {
 	if ( Init() ) {
 		do {
-			ET = mWindow->elapsed().asMilliseconds();
+			ET = mWindow->getElapsed().asMilliseconds();
 
 			Input();
 
 			TEP.restart();
 
-			if ( mWindow->visible() ) {
+			if ( mWindow->isVisible() ) {
 				Render();
 
 				if ( KM->isKeyUp(KEY_F12) ) mWindow->takeScreenshot();
@@ -297,7 +297,7 @@ void cApp::Process() {
 				Sys::sleep( 16 );
 			}
 
-			RET = TEP.elapsed().asMilliseconds();
+			RET = TEP.getElapsed().asMilliseconds();
 
 			if ( mConfig.LateLoading && mLaterLoad ) {
 				if ( Sys::getTicks() - mLastLaterTick > mConfig.TransitionTime ) {
@@ -423,7 +423,7 @@ void cApp::GetImages() {
 		mFiles.push_back( tmpI );
 	}
 
-	Con.pushText( "Image list loaded in %f ms.", TE.elapsed().asMilliseconds() );
+	Con.pushText( "Image list loaded in %f ms.", TE.getElapsed().asMilliseconds() );
 
 	Con.pushText( "Directory: \"" + String::fromUtf8( mFilePath ) + "\"" );
 	for ( Uint32 i = 0; i < mFiles.size(); i++ )
@@ -451,9 +451,9 @@ void cApp::SetImage( const Uint32& Tex, const std::string& path ) {
 		mImgRT = RN_NORMAL;
 
 		mImg.createStatic( Tex );
-		mImg.renderMode( mImgRT );
-		mImg.scale( mConfig.DefaultImageZoom );
-		mImg.position( 0.0f, 0.0f );
+		mImg.setRenderMode( mImgRT );
+		mImg.setScale( mConfig.DefaultImageZoom );
+		mImg.setPosition( 0.0f, 0.0f );
 
 		if ( path != mFiles[ mCurImg ].Path )
 			mCurImg = CurImagePos( path );
@@ -467,8 +467,8 @@ void cApp::SetImage( const Uint32& Tex, const std::string& path ) {
 		if ( NULL != pTex ) {
 			Fon->setText(
 				"File: " + String::fromUtf8( mFile ) +
-				"\nWidth: " + String::toStr( pTex->width() ) +
-				"\nHeight: " + String::toStr( pTex->height() ) +
+				"\nWidth: " + String::toStr( pTex->getWidth() ) +
+				"\nHeight: " + String::toStr( pTex->getHeight() ) +
 				"\n" + String::toStr( mCurImg+1 ) + "/" + String::toStr( mFiles.size() )
 			);
 		}
@@ -520,8 +520,8 @@ void cApp::UnloadImage( const Uint32& img ) {
 
 void cApp::OptUpdate() {
 	mImg.createStatic( mFiles [ mCurImg ].Tex );
-	mImg.scale( mConfig.DefaultImageZoom );
-	mImg.position( 0.0f, 0.0f );
+	mImg.setScale( mConfig.DefaultImageZoom );
+	mImg.setPosition( 0.0f, 0.0f );
 
 	ScaleToScreen();
 
@@ -534,8 +534,8 @@ void cApp::OptUpdate() {
 		if ( Tex ) {
 			Fon->setText(
 				"File: " + String::fromUtf8( mFiles [ mCurImg ].Path ) +
-				"\nWidth: " + String::toStr( Tex->width() ) +
-				"\nHeight: " + String::toStr( Tex->height() ) +
+				"\nWidth: " + String::toStr( Tex->getWidth() ) +
+				"\nHeight: " + String::toStr( Tex->getHeight() ) +
 				"\n" + String::toStr( mCurImg + 1 ) + "/" + String::toStr( mFiles.size() )
 			);
 		}
@@ -585,17 +585,17 @@ void cApp::Input() {
 	KM->update();
 	Mouse = KM->getMousePos();
 
-	if ( KM->isKeyDown(KEY_TAB) && KM->altPressed() ) {
+	if ( KM->isKeyDown(KEY_TAB) && KM->isAltPressed() ) {
 		mWindow->minimize();
 	}
 
-	if ( KM->isKeyDown(KEY_ESCAPE) || ( KM->isKeyDown(KEY_Q) && !Con.active() ) ) {
+	if ( KM->isKeyDown(KEY_ESCAPE) || ( KM->isKeyDown(KEY_Q) && !Con.isActive() ) ) {
 		mWindow->close();
 	}
 
-	if ( ( KM->altPressed() && KM->isKeyUp(KEY_RETURN) ) || ( KM->isKeyUp(KEY_F) && !Con.active() ) ) {
+	if ( ( KM->isAltPressed() && KM->isKeyUp(KEY_RETURN) ) || ( KM->isKeyUp(KEY_F) && !Con.isActive() ) ) {
 		if ( mWindow->isWindowed() )
-			mWindow->size( mWindow->getDesktopResolution().width(), mWindow->getDesktopResolution().height(), false );
+			mWindow->setSize( mWindow->getDesktopResolution().getWidth(), mWindow->getDesktopResolution().getHeight(), false );
 		else
 			mWindow->toggleFullscreen();
 
@@ -611,16 +611,16 @@ void cApp::Input() {
 		Con.toggle();
 	}
 
-	if ( ( KM->isKeyUp(KEY_S) && !Con.active() ) || KM->isKeyUp(KEY_F4) ) {
+	if ( ( KM->isKeyUp(KEY_S) && !Con.isActive() ) || KM->isKeyUp(KEY_F4) ) {
 		mCursor = !mCursor;
 		mWindow->getCursorManager()->visible( mCursor );
 	}
 
-	if ( KM->isKeyUp(KEY_H) && !Con.active() ) {
+	if ( KM->isKeyUp(KEY_H) && !Con.isActive() ) {
 		mShowHelp = !mShowHelp;
 	}
 
-	if ( ( ( KM->isKeyUp(KEY_V) && KM->controlPressed() ) || ( KM->isKeyUp(KEY_INSERT) && KM->shiftPressed() ) ) && !Con.active() ) {
+	if ( ( ( KM->isKeyUp(KEY_V) && KM->isControlPressed() ) || ( KM->isKeyUp(KEY_INSERT) && KM->isShiftPressed() ) ) && !Con.isActive() ) {
 		std::string tPath = mWindow->getClipboard()->getText();
 
 		if ( ( tPath.size() && IsImage( tPath ) ) || FileSystem::isDirectory( tPath ) ) {
@@ -628,8 +628,8 @@ void cApp::Input() {
 		}
 	}
 
-	if ( !Con.active() ) {
-		if ( KM->mouseWheelUp() || KM->isKeyUp(KEY_PAGEUP) ) {
+	if ( !Con.isActive() ) {
+		if ( KM->mouseWheelScrolledUp() || KM->isKeyUp(KEY_PAGEUP) ) {
 			if ( !mConfig.BlockWheelSpeed || Sys::getTicks() - mLastWheelUse > mConfig.WheelBlockTime ) {
 				mLastWheelUse = Sys::getTicks();
 				LoadPrevImage();
@@ -637,7 +637,7 @@ void cApp::Input() {
 			}
 		}
 
-		if ( KM->mouseWheelDown() || KM->isKeyUp(KEY_PAGEDOWN) ) {
+		if ( KM->mouseWheelScrolledDown() || KM->isKeyUp(KEY_PAGEDOWN) ) {
 			if ( !mConfig.BlockWheelSpeed || Sys::getTicks() - mLastWheelUse > mConfig.WheelBlockTime ) {
 				mLastWheelUse = Sys::getTicks();
 				LoadNextImage();
@@ -650,7 +650,7 @@ void cApp::Input() {
 		}
 	}
 
-	if ( mFiles.size() && mFiles[ mCurImg ].Tex && !Con.active() ) {
+	if ( mFiles.size() && mFiles[ mCurImg ].Tex && !Con.isActive() ) {
 		if ( KM->isKeyUp(KEY_HOME) ) {
 			LoadFirstImage();
 			DisableSlideShow();
@@ -666,7 +666,7 @@ void cApp::Input() {
 		}
 
 		if ( KM->isKeyUp(KEY_KP_DIVIDE) ) {
-			mImg.scale( mConfig.DefaultImageZoom );
+			mImg.setScale( mConfig.DefaultImageZoom );
 		}
 
 		if ( KM->isKeyUp(KEY_Z) ) {
@@ -674,8 +674,8 @@ void cApp::Input() {
 		}
 
 		if ( KM->isKeyUp( KEY_N ) ) {
-			if ( mWindow->size().width() != (Int32)mImg.size().width() || mWindow->size().height() != (Int32)mImg.size().height() ) {
-				mWindow->size( mImg.size().width(), mImg.size().height() );
+			if ( mWindow->getSize().getWidth() != (Int32)mImg.getSize().getWidth() || mWindow->getSize().getHeight() != (Int32)mImg.getSize().getHeight() ) {
+				mWindow->setSize( mImg.getSize().getWidth(), mImg.getSize().getHeight() );
 			}
 		}
 
@@ -683,44 +683,44 @@ void cApp::Input() {
 			mZoomTicks = Sys::getTicks();
 
 			if ( KM->isKeyDown(KEY_KP_MINUS) )
-				mImg.scale( mImg.scale() - 0.02f );
+				mImg.setScale( mImg.getScale() - 0.02f );
 
 
 			if ( KM->isKeyDown(KEY_KP_PLUS) )
-				mImg.scale( mImg.scale() + 0.02f );
+				mImg.setScale( mImg.getScale() + 0.02f );
 
-			if ( mImg.scale().x < 0.0125f )
-				mImg.scale( 0.0125f );
+			if ( mImg.getScale().x < 0.0125f )
+				mImg.setScale( 0.0125f );
 
-			if ( mImg.scale().x > 50.0f )
-				mImg.scale( 50.0f );
+			if ( mImg.getScale().x > 50.0f )
+				mImg.setScale( 50.0f );
 		}
 
 		if ( KM->isKeyDown(KEY_LEFT) ) {
-			mImg.x( ( mImg.x() + ( (mWindow->elapsed().asMilliseconds() * 0.4f) ) ) );
-			mImg.x( static_cast<Float> ( static_cast<Int32> ( mImg.x() ) ) );
+			mImg.setX( ( mImg.getX() + ( (mWindow->getElapsed().asMilliseconds() * 0.4f) ) ) );
+			mImg.setX( static_cast<Float> ( static_cast<Int32> ( mImg.getX() ) ) );
 		}
 
 		if ( KM->isKeyDown(KEY_RIGHT) ) {
-			mImg.x( ( mImg.x() + ( -(mWindow->elapsed().asMilliseconds() * 0.4f) ) ) );
-			mImg.x( static_cast<Float> ( static_cast<Int32> ( mImg.x() ) ) );
+			mImg.setX( ( mImg.getX() + ( -(mWindow->getElapsed().asMilliseconds() * 0.4f) ) ) );
+			mImg.setX( static_cast<Float> ( static_cast<Int32> ( mImg.getX() ) ) );
 		}
 
 		if ( KM->isKeyDown(KEY_UP) ) {
-			mImg.y( ( mImg.y() + ( (mWindow->elapsed().asMilliseconds() * 0.4f) ) ) );
-			mImg.y( static_cast<Float> ( static_cast<Int32> ( mImg.y() ) ) );
+			mImg.setY( ( mImg.getY() + ( (mWindow->getElapsed().asMilliseconds() * 0.4f) ) ) );
+			mImg.setY( static_cast<Float> ( static_cast<Int32> ( mImg.getY() ) ) );
 		}
 
 		if ( KM->isKeyDown(KEY_DOWN) ) {
-			mImg.y( ( mImg.y() + ( -(mWindow->elapsed().asMilliseconds() * 0.4f) ) ) );
-			mImg.y( static_cast<Float> ( static_cast<Int32> ( mImg.y() ) ) );
+			mImg.setY( ( mImg.getY() + ( -(mWindow->getElapsed().asMilliseconds() * 0.4f) ) ) );
+			mImg.setY( static_cast<Float> ( static_cast<Int32> ( mImg.getY() ) ) );
 		}
 
-		if ( KM->mouseLeftClick() ) {
+		if ( KM->mouseLeftClicked() ) {
 			mMouseLeftPressing = false;
 		}
 
-		if ( KM->mouseLeftPressed() ) {
+		if ( KM->isMouseLeftPressed() ) {
 			Vector2f mNewPos;
 			if ( !mMouseLeftPressing ) {
 				mMouseLeftStartClick = Mouse;
@@ -733,17 +733,17 @@ void cApp::Input() {
 
 				if ( mNewPos.x != 0 || mNewPos.y != 0 ) {
 					mMouseLeftStartClick = Mouse;
-					mImg.x( mImg.x() + mNewPos.x );
-					mImg.y( mImg.y() + mNewPos.y );
+					mImg.setX( mImg.getX() + mNewPos.x );
+					mImg.setY( mImg.getY() + mNewPos.y );
 				}
 			}
 		}
 
-		if ( KM->mouseMiddleClick() ) {
+		if ( KM->mouseMiddleClicked() ) {
 			mMouseMiddlePressing = false;
 		}
 
-		if ( KM->mouseMiddlePressed() ) {
+		if ( KM->isMouseMiddlePressed() ) {
 			if ( !mMouseMiddlePressing ) {
 				mMouseMiddleStartClick = Mouse;
 				mMouseMiddlePressing = true;
@@ -759,19 +759,19 @@ void cApp::Input() {
 				if ( Dist ) {
 					mMouseMiddleStartClick = Mouse;
 					if ( Ang >= 0.0f && Ang <= 180.0f ) {
-						mImg.scale( mImg.scale() - Dist );
-						if ( mImg.scale().x < 0.0125f )
-							mImg.scale( 0.0125f );
+						mImg.setScale( mImg.getScale() - Dist );
+						if ( mImg.getScale().x < 0.0125f )
+							mImg.setScale( 0.0125f );
 					} else {
-						mImg.scale( mImg.scale() + Dist );
+						mImg.setScale( mImg.getScale() + Dist );
 					}
 				}
 			}
 		}
 
-		if ( KM->mouseRightPressed() ) {
+		if ( KM->isMouseRightPressed() ) {
 			Line2f line( Vector2f( Mouse.x, Mouse.y ), Vector2f( HWidth, HHeight ) );
-			mImg.angle( line.getAngle() );
+			mImg.setRotation( line.getAngle() );
 		}
 
 		if ( KM->isKeyUp(KEY_X) ) {
@@ -784,7 +784,7 @@ void cApp::Input() {
 			else
 				mImgRT = RN_NORMAL;
 
-			mImg.renderMode( mImgRT );
+			mImg.setRenderMode( mImgRT );
 		}
 
 		if ( KM->isKeyUp(KEY_C) ) {
@@ -797,11 +797,11 @@ void cApp::Input() {
 			else
 				mImgRT = RN_NORMAL;
 
-			mImg.renderMode( mImgRT );
+			mImg.setRenderMode( mImgRT );
 		}
 
 		if ( KM->isKeyUp(KEY_R) ) {
-			mImg.angle( mImg.angle() + 90.0f );
+			mImg.setRotation( mImg.getRotation() + 90.0f );
 			ScaleToScreen();
 		}
 
@@ -817,20 +817,20 @@ void cApp::Input() {
 		}
 
 		if ( KM->isKeyUp(KEY_M) ) {
-			mImg.position( 0.0f,0.0f );
-			mImg.scale( mConfig.DefaultImageZoom );
-			mImg.angle( 0.f );
+			mImg.setPosition( 0.0f,0.0f );
+			mImg.setScale( mConfig.DefaultImageZoom );
+			mImg.setRotation( 0.f );
 			ScaleToScreen();
 
 			if ( EE->getCurrentWindow()->isMaximized() ) {
-				EE->getCurrentWindow()->size( mImg.size().width(), mImg.size().height() );
+				EE->getCurrentWindow()->setSize( mImg.getSize().getWidth(), mImg.getSize().getHeight() );
 			}
 		}
 
 		if ( KM->isKeyUp(KEY_T) ) {
-			mImg.position( 0.0f,0.0f );
-			mImg.scale( mConfig.DefaultImageZoom );
-			mImg.angle( 0.f );
+			mImg.setPosition( 0.0f,0.0f );
+			mImg.setScale( mConfig.DefaultImageZoom );
+			mImg.setRotation( 0.f );
 			ScaleToScreen();
 		}
 
@@ -890,7 +890,7 @@ void cApp::ScaleToScreen( const bool& force ) {
 		if ( Tex->imgWidth() * mConfig.DefaultImageZoom >= Width || Tex->imgHeight() * mConfig.DefaultImageZoom >= Height ) {
 			ZoomImage();
 		} else if ( force ) {
-			mImg.scale( mConfig.DefaultImageZoom );
+			mImg.setScale( mConfig.DefaultImageZoom );
 		}
 	}
 }
@@ -902,9 +902,9 @@ void cApp::ZoomImage() {
 		if ( NULL == Tex )
 			return;
 
-		Sizef boxSize = mImg.size();
+		Sizef boxSize = mImg.getSize();
 
-		mImg.scale( eemin( Width / boxSize.width(), Height / boxSize.height() ) );
+		mImg.setScale( eemin( Width / boxSize.getWidth(), Height / boxSize.getHeight() ) );
 	}
 }
 
@@ -921,7 +921,7 @@ void cApp::PrepareFrame() {
 		else
 			mInfo = "EEiv";
 
-		mWindow->caption( mInfo );
+		mWindow->setCaption( mInfo );
 	}
 }
 
@@ -936,11 +936,11 @@ void cApp::Render() {
 		Texture * Tex = mImg.getCurrentSubTexture()->getTexture();
 
 		if ( Tex ) {
-			Float X = static_cast<Float> ( static_cast<Int32> ( HWidth - mImg.size().width() * 0.5f ) );
-			Float Y = static_cast<Float> ( static_cast<Int32> ( HHeight - mImg.size().height() * 0.5f ) );
+			Float X = static_cast<Float> ( static_cast<Int32> ( HWidth - mImg.getSize().getWidth() * 0.5f ) );
+			Float Y = static_cast<Float> ( static_cast<Int32> ( HHeight - mImg.getSize().getHeight() * 0.5f ) );
 
-			mImg.offset( Vector2i( X, Y ) );
-			mImg.alpha( mCurAlpha );
+			mImg.setOffset( Vector2i( X, Y ) );
+			mImg.setAlpha( mCurAlpha );
 			mImg.draw();
 		}
 	}
@@ -976,11 +976,11 @@ void cApp::DoFade() {
 		Texture * Tex = NULL;
 
 		if ( NULL != mOldImg.getCurrentSubTexture() && ( Tex = mOldImg.getCurrentSubTexture()->getTexture() ) ) {
-			Float X = static_cast<Float> ( static_cast<Int32> ( HWidth - mOldImg.size().width() * 0.5f ) );
-			Float Y = static_cast<Float> ( static_cast<Int32> ( HHeight - mOldImg.size().height() * 0.5f ) );
+			Float X = static_cast<Float> ( static_cast<Int32> ( HWidth - mOldImg.getSize().getWidth() * 0.5f ) );
+			Float Y = static_cast<Float> ( static_cast<Int32> ( HHeight - mOldImg.getSize().getHeight() * 0.5f ) );
 
-			mOldImg.offset( Vector2i( X, Y ) );
-			mOldImg.alpha( 255 - mCurAlpha );
+			mOldImg.setOffset( Vector2i( X, Y ) );
+			mOldImg.setAlpha( 255 - mCurAlpha );
 			mOldImg.draw();
 		}
 	}
@@ -1065,7 +1065,7 @@ void cApp::ThumgnailImg( const std::string& Path, const Uint32& MaxWidth, const 
 		Image * thumb = img.thumbnail( MaxWidth, MaxHeight );
 
 		if ( NULL != thumb ) {
-			std::string newPath( CreateSavePath( Path, thumb->width(), thumb->height(), saveType ) );
+			std::string newPath( CreateSavePath( Path, thumb->getWidth(), thumb->getHeight(), saveType ) );
 			EE_SAVE_TYPE type = SAVE_TYPE_UNKNOWN != saveType ? saveType : GetPathSaveType( newPath );
 
 			thumb->saveToFile( newPath, type );
@@ -1085,31 +1085,31 @@ void cApp::CenterCropImg( const std::string& Path, const Uint32& Width, const Ui
 
 		double scale = 1.f;
 
-		scale = eemax( (double)Width / (double)img.width(), (double)Height / (double)img.height() );
+		scale = eemax( (double)Width / (double)img.getWidth(), (double)Height / (double)img.getHeight() );
 
-		nSize.x = Math::round( img.width() * scale );
-		nSize.y = Math::round( img.height() * scale );
+		nSize.x = Math::round( img.getWidth() * scale );
+		nSize.y = Math::round( img.getHeight() * scale );
 
-		if ( nSize.width() == (int)Width - 1 || nSize.width() == (int)Width + 1 ) {
+		if ( nSize.getWidth() == (int)Width - 1 || nSize.getWidth() == (int)Width + 1 ) {
 			nSize.x = (int)Width;
 		}
 
-		if ( nSize.height() == (int)Height - 1 || nSize.height() == (int)Height + 1 ) {
+		if ( nSize.getHeight() == (int)Height - 1 || nSize.getHeight() == (int)Height + 1 ) {
 			nSize.y = (int)Height;
 		}
 
-		img.resize( nSize.width(), nSize.height() );
+		img.resize( nSize.getWidth(), nSize.getHeight() );
 
 		Image * croppedImg  = NULL;
 		Recti rect;
 
-		if ( img.width() > Width ) {
-			rect.Left = ( img.width() - Width ) / 2;
+		if ( img.getWidth() > Width ) {
+			rect.Left = ( img.getWidth() - Width ) / 2;
 			rect.Right = rect.Left + Width;
 			rect.Top = 0;
 			rect.Bottom = Height;
 		} else {
-			rect.Top = ( img.height() - Height ) / 2;
+			rect.Top = ( img.getHeight() - Height ) / 2;
 			rect.Bottom = rect.Top + Height;
 			rect.Left = 0;
 			rect.Right = Width;
@@ -1118,14 +1118,14 @@ void cApp::CenterCropImg( const std::string& Path, const Uint32& Width, const Ui
 		croppedImg = img.crop( rect );
 
 		if ( NULL != croppedImg ) {
-			std::string newPath( CreateSavePath( Path, croppedImg->width(), croppedImg->height(), saveType ) );
+			std::string newPath( CreateSavePath( Path, croppedImg->getWidth(), croppedImg->getHeight(), saveType ) );
 			EE_SAVE_TYPE type = SAVE_TYPE_UNKNOWN != saveType ? saveType : GetPathSaveType( newPath );
 
 			croppedImg->saveToFile( newPath, type );
 
 			eeSAFE_DELETE( croppedImg );
 		} else {
-			std::string newPath( CreateSavePath( Path, img.width(), img.height(), saveType ) );
+			std::string newPath( CreateSavePath( Path, img.getWidth(), img.getHeight(), saveType ) );
 			EE_SAVE_TYPE type = SAVE_TYPE_UNKNOWN != saveType ? saveType : GetPathSaveType( newPath );
 
 			img.saveToFile( newPath, type );
@@ -1161,15 +1161,15 @@ void cApp::BatchImgThumbnail( Sizei size, std::string dir, bool recursive ) {
 		} else {
 			int w, h, c;
 			if ( Image::getInfo( fpath, &w, &h, &c ) ) {
-				if ( w > size.width() || h > size.height() ) {
+				if ( w > size.getWidth() || h > size.getHeight() ) {
 					Image img( fpath );
 
-					Image * thumb = img.thumbnail( size.width(), size.height() );
+					Image * thumb = img.thumbnail( size.getWidth(), size.getHeight() );
 
 					if ( NULL != thumb ) {
 						thumb->saveToFile( fpath, Image::extensionToSaveType( FileSystem::fileExtension( fpath ) ) );
 
-						Con.pushText( "Thumbnail created for '%s'. Old size %dx%d. New size %dx%d.", fpath.c_str(), img.width(), img.height(), thumb->width(), thumb->height() );
+						Con.pushText( "Thumbnail created for '%s'. Old size %dx%d. New size %dx%d.", fpath.c_str(), img.getWidth(), img.getHeight(), thumb->getWidth(), thumb->getHeight() );
 
 						eeSAFE_DELETE( thumb );
 					} else {
@@ -1551,7 +1551,7 @@ void cApp::CmdSetBackColor( const std::vector < String >& params ) {
 			bool Res3 = String::fromString<Int32>( B, params[3] );
 
 			if ( Res1 && Res2 && Res3 && ( R <= 255 && R >= 0 ) && ( G <= 255 && G >= 0 ) && ( B <= 255 && B >= 0 ) ) {
-				mWindow->backColor( RGB( R,G,B ) );
+				mWindow->setBackColor( RGB( R,G,B ) );
 				Con.pushText( "setbackcolor applied" );
 				return;
 			}
@@ -1595,7 +1595,7 @@ void cApp::CmdSetZoom( const std::vector < String >& params ) {
 
 		if ( Res && tFloat >= 0 && tFloat <= 10 ) {
 			Con.pushText( "setzoom: zoom level " + String::toStr( tFloat ) );
-			mImg.scale( tFloat );
+			mImg.setScale( tFloat );
 		} else
 			Con.pushText( "setzoom: value out of range" );
 	} else
