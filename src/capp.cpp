@@ -809,10 +809,10 @@ void cApp::Input() {
 			Texture * Tex = mImg.getCurrentSubTexture()->getTexture();
 
 			if ( Tex ) {
-				if ( Tex->filter() == TEX_FILTER_LINEAR )
-					Tex->filter( TEX_FILTER_NEAREST );
+				if ( Tex->getFilter() == TEX_FILTER_LINEAR )
+					Tex->setFilter( TEX_FILTER_NEAREST );
 				else
-					Tex->filter( TEX_FILTER_LINEAR );
+					Tex->setFilter( TEX_FILTER_LINEAR );
 			}
 		}
 
@@ -846,7 +846,7 @@ void cApp::Input() {
 			Texture * curTex;
 
 			if ( NULL != mImg.getCurrentSubTexture() && NULL != ( curTex = mImg.getCurrentSubTexture()->getTexture() ) ) {
-				curTex->mipmap( !curTex->mipmap() );
+				curTex->setMipmap( !curTex->getMipmap() );
 				curTex->reload();
 			}
 		}
@@ -887,7 +887,7 @@ void cApp::ScaleToScreen( const bool& force ) {
 		if ( NULL == Tex )
 			return;
 
-		if ( Tex->imgWidth() * mConfig.DefaultImageZoom >= Width || Tex->imgHeight() * mConfig.DefaultImageZoom >= Height ) {
+		if ( Tex->getImageWidth() * mConfig.DefaultImageZoom >= Width || Tex->getImageHeight() * mConfig.DefaultImageZoom >= Height ) {
 			ZoomImage();
 		} else if ( force ) {
 			mImg.setScale( mConfig.DefaultImageZoom );
