@@ -24,7 +24,7 @@ static std::string GetWindowsPath() {
 #include "capp.hpp"
 #include <algorithm>
 
-static bool IsImage( const std::string& path ) {
+static bool isImage( const std::string& path ) {
 	std::string mPath = path;
 
 	if ( path.size() >= 7 && path.substr(0,7) == "file://" )
@@ -49,7 +49,7 @@ static bool IsHttpUrl( const std::string& path ) {
 	return path.substr(0,7) == "http://" || path.substr(0,8) == "https://";
 }
 
-cApp::cApp( int argc, char *argv[] ) :
+App::App( int argc, char *argv[] ) :
 	Fon(NULL),
 	Mon(NULL),
 	mCurImg(0),
@@ -79,14 +79,14 @@ cApp::cApp( int argc, char *argv[] ) :
 	else
 		nstr.assign( argv[0] );
 
-	LoadDir( nstr, false );
+	loadDir( nstr, false );
 }
 
-cApp::~cApp() {
-	ClearTempDir();
+App::~App() {
+	clearTempDir();
 }
 
-void cApp::GetConfig() {
+void App::getConfig() {
 	mConfig.Width = Ini.getValueI( "Window", "Width", 1024 );
 	mConfig.Height = Ini.getValueI( "Window", "Height", 768 );
 	mConfig.BitColor = Ini.getValueI( "Window", "BitColor", 32 );
@@ -109,13 +109,13 @@ void cApp::GetConfig() {
 	mConfig.WheelBlockTime = Ini.getValueI( "Viewer", "WheelBlockTime", 200 );
 }
 
-void cApp::LoadConfig() {
+void App::loadConfig() {
 	std::string tPath = mStorePath + "eeiv.ini";
 	Ini.loadFromFile( tPath );
 
 	if ( FileSystem::fileExists( tPath ) ) {
 		Ini.readFile();
-		GetConfig();
+		getConfig();
 	} else {
 		Ini.setValueI( "Window", "Width", 1024 );
 		Ini.setValueI( "Window", "Height", 768 );
@@ -142,12 +142,12 @@ void cApp::LoadConfig() {
 			FileSystem::makeDir( mStorePath );
 
 		Ini.writeFile();
-		GetConfig();
+		getConfig();
 	}
 }
 
-bool cApp::Init() {
-	LoadConfig();
+bool App::init() {
+	loadConfig();
 
 	EE 		= Engine::instance();
 	MyPath 	= Sys::getProcessPath();
@@ -240,32 +240,32 @@ bool cApp::Init() {
 		Con.create( Mon, true, true, 1024000 );
 		Con.ignoreCharOnPrompt( 186 );
 
-		Con.addCommand( "loaddir", cb::Make1( this, &cApp::CmdLoadDir ) );
-		Con.addCommand( "loadimg", cb::Make1( this, &cApp::CmdLoadImg ) );
-		Con.addCommand( "setbackcolor", cb::Make1( this, &cApp::CmdSetBackColor ) );
-		Con.addCommand( "setimgfade", cb::Make1( this, &cApp::CmdSetImgFade ) );
-		Con.addCommand( "setlateloading", cb::Make1( this, &cApp::CmdSetLateLoading ) );
-		Con.addCommand( "setblockwheel", cb::Make1( this, &cApp::CmdSetBlockWheel ) );
-		Con.addCommand( "moveto", cb::Make1( this, &cApp::CmdMoveTo ) );
-		Con.addCommand( "batchimgscale", cb::Make1( this, &cApp::CmdBatchImgScale ) );
-		Con.addCommand( "batchimgchangeformat", cb::Make1( this, &cApp::CmdBatchImgChangeFormat ) );
-		Con.addCommand( "batchimgthumbnail", cb::Make1( this, &cApp::CmdBatchImgThumbnail ) );
-		Con.addCommand( "imgchangeformat", cb::Make1( this, &cApp::CmdImgChangeFormat ) );
-		Con.addCommand( "imgresize", cb::Make1( this, &cApp::CmdImgResize ) );
-		Con.addCommand( "imgscale", cb::Make1( this, &cApp::CmdImgScale ) );
-		Con.addCommand( "imgthumbnail", cb::Make1( this, &cApp::CmdImgThumbnail ) );
-		Con.addCommand( "imgcentercrop", cb::Make1( this, &cApp::CmdImgCenterCrop) );
-		Con.addCommand( "slideshow", cb::Make1( this, &cApp::CmdSlideShow ) );
-		Con.addCommand( "setzoom", cb::Make1( this, &cApp::CmdSetZoom ) );
+		Con.addCommand( "loaddir", cb::Make1( this, &App::cmdLoadDir ) );
+		Con.addCommand( "loadimg", cb::Make1( this, &App::cmdLoadImg ) );
+		Con.addCommand( "setbackcolor", cb::Make1( this, &App::cmdSetBackColor ) );
+		Con.addCommand( "setimgfade", cb::Make1( this, &App::cmdSetImgFade ) );
+		Con.addCommand( "setlateloading", cb::Make1( this, &App::cmdSetLateLoading ) );
+		Con.addCommand( "setblockwheel", cb::Make1( this, &App::cmdSetBlockWheel ) );
+		Con.addCommand( "moveto", cb::Make1( this, &App::cmdMoveTo ) );
+		Con.addCommand( "batchimgscale", cb::Make1( this, &App::cmdBatchImgScale ) );
+		Con.addCommand( "batchimgchangeformat", cb::Make1( this, &App::cmdBatchImgChangeFormat ) );
+		Con.addCommand( "batchimgthumbnail", cb::Make1( this, &App::cmdBatchImgThumbnail ) );
+		Con.addCommand( "imgchangeformat", cb::Make1( this, &App::cmdImgChangeFormat ) );
+		Con.addCommand( "imgresize", cb::Make1( this, &App::cmdImgResize ) );
+		Con.addCommand( "imgscale", cb::Make1( this, &App::cmdImgScale ) );
+		Con.addCommand( "imgthumbnail", cb::Make1( this, &App::cmdImgThumbnail ) );
+		Con.addCommand( "imgcentercrop", cb::Make1( this, &App::cmdImgCenterCrop) );
+		Con.addCommand( "slideshow", cb::Make1( this, &App::cmdSlideShow ) );
+		Con.addCommand( "setzoom", cb::Make1( this, &App::cmdSetZoom ) );
 
-		PrepareFrame();
-		GetImages();
+		prepareFrame();
+		getImages();
 
 		if ( mFile != "" ) {
-			FastLoadImage( CurImagePos( mFile ) );
+			fastLoadImage( curImagePos( mFile ) );
 		} else {
 			if ( mFiles.size() )
-				FastLoadImage( 0 );
+				fastLoadImage( 0 );
 		}
 
 		if ( 0 == mFiles.size() && 0 == mFile.length() ) {
@@ -278,17 +278,17 @@ bool cApp::Init() {
 	return false;
 }
 
-void cApp::Process() {
-	if ( Init() ) {
+void App::process() {
+	if ( init() ) {
 		do {
 			ET = mWindow->getElapsed().asMilliseconds();
 
-			Input();
+			input();
 
 			TEP.restart();
 
 			if ( mWindow->isVisible() ) {
-				Render();
+				render();
 
 				if ( KM->isKeyUp(KEY_F12) ) mWindow->takeScreenshot();
 
@@ -301,22 +301,22 @@ void cApp::Process() {
 
 			if ( mConfig.LateLoading && mLaterLoad ) {
 				if ( Sys::getTicks() - mLastLaterTick > mConfig.TransitionTime ) {
-					UpdateImages();
+					updateImages();
 					mLaterLoad = false;
 				}
 			}
 
 			if ( mFirstLoad ) {
-				UpdateImages();
+				updateImages();
 				mFirstLoad = false;
 			}
 		} while( mWindow->isRunning() );
 	}
 
-	End();
+	end();
 }
 
-void cApp::LoadDir( const std::string& path, const bool& getimages ) {
+void App::loadDir( const std::string& path, const bool& getimages ) {
 	std::string tmpFile;
 
 	if ( !FileSystem::isDirectory( path ) ) {
@@ -366,7 +366,7 @@ void cApp::LoadDir( const std::string& path, const bool& getimages ) {
 
 		FileSystem::dirPathAddSlashAtEnd( mFilePath );
 
-		if ( IsImage( mFilePath + tmpFile ) )
+		if ( isImage( mFilePath + tmpFile ) )
 			mFile = tmpFile;
 		else
 			return;
@@ -379,20 +379,20 @@ void cApp::LoadDir( const std::string& path, const bool& getimages ) {
 	mCurImg = 0;
 
 	if ( getimages )
-		GetImages();
+		getImages();
 
 	if ( mFiles.size() ) {
 		if ( mFile.size() )
-			mCurImg = CurImagePos( mFile );
+			mCurImg = curImagePos( mFile );
 
 		if ( mWindow->isRunning() )
-			UpdateImages();
+			updateImages();
 	}
 }
 
-void cApp::ClearTempDir() {
+void App::clearTempDir() {
 	if ( mUsedTempDir ) {
-		GetImages();
+		getImages();
 
 		for ( Uint32 i = 0; i < mFiles.size(); i++ ) {
 			std::string Delfile = mFilePath + mFiles[i].Path;
@@ -401,7 +401,7 @@ void cApp::ClearTempDir() {
 	}
 }
 
-void cApp::GetImages() {
+void App::getImages() {
 	Clock TE;
 
 	Uint32 i;
@@ -410,7 +410,7 @@ void cApp::GetImages() {
 
 	std::vector<std::string> tmpFiles = FileSystem::filesGetInPath( mFilePath );
 	for ( i = 0; i < tmpFiles.size(); i++ )
-		if ( IsImage( mFilePath + tmpFiles[i] ) )
+		if ( isImage( mFilePath + tmpFiles[i] ) )
 			tStr.push_back( tmpFiles[i] );
 
 	std::sort( tStr.begin(), tStr.end() );
@@ -430,7 +430,7 @@ void cApp::GetImages() {
 		Con.pushText( "	" + String::fromUtf8( mFiles[i].Path ) );
 }
 
-Uint32 cApp::CurImagePos( const std::string& path ) {
+Uint32 App::curImagePos( const std::string& path ) {
 	for ( Uint32 i = 0; i < mFiles.size(); i++ ) {
 		if ( mFiles[i].Path == path )
 			return i;
@@ -438,13 +438,13 @@ Uint32 cApp::CurImagePos( const std::string& path ) {
 	return 0;
 }
 
-void cApp::FastLoadImage( const Uint32& ImgNum ) {
+void App::fastLoadImage( const Uint32& ImgNum ) {
 	mCurImg = ImgNum;
-	mFiles[ mCurImg ].Tex = LoadImage( mFiles[ mCurImg ].Path, true );
+	mFiles[ mCurImg ].Tex = loadImage( mFiles[ mCurImg ].Path, true );
 	mFirstLoad = true;
 }
 
-void cApp::SetImage( const Uint32& Tex, const std::string& path ) {
+void App::setImage( const Uint32& Tex, const std::string& path ) {
 	if ( Tex ) {
 		mFiles[ mCurImg ].Tex = Tex;
 
@@ -456,11 +456,11 @@ void cApp::SetImage( const Uint32& Tex, const std::string& path ) {
 		mImg.setPosition( 0.0f, 0.0f );
 
 		if ( path != mFiles[ mCurImg ].Path )
-			mCurImg = CurImagePos( path );
+			mCurImg = curImagePos( path );
 
 		mFile = mFiles[ mCurImg ].Path;
 
-		ScaleToScreen();
+		scaleToScreen();
 
 		Texture * pTex = TF->getTexture( Tex );
 
@@ -477,53 +477,53 @@ void cApp::SetImage( const Uint32& Tex, const std::string& path ) {
 	}
 }
 
-Uint32 cApp::LoadImage( const std::string& path, const bool& SetAsCurrent ) {
+Uint32 App::loadImage( const std::string& path, const bool& SetAsCurrent ) {
 	Uint32 TexId 		= 0;
 
 	TexId = TF->load( mFilePath + path );
 
 	if ( SetAsCurrent )
-		SetImage( TexId, path );
+		setImage( TexId, path );
 
 	return TexId;
 }
 
-void cApp::UpdateImages() {
+void App::updateImages() {
 	for ( Int32 i = 0; i < (Int32)mFiles.size(); i++ ) {
 		if ( !( i == ( mCurImg - 1 ) || i == mCurImg || i == ( mCurImg + 1 ) )  ) {
-			UnloadImage( i );
+			unloadImage( i );
 		}
 
 		if ( i == ( mCurImg - 1 ) || i == ( mCurImg + 1 ) ) {
 			if ( mFiles[ i ].Tex == 0 ) {
-				mFiles[ i ].Tex = LoadImage( mFiles[ i ].Path );
+				mFiles[ i ].Tex = loadImage( mFiles[ i ].Path );
 			}
 		}
 
 		if ( i == mCurImg ) {
 			if ( mFiles[ i ].Tex == 0 )
 			{
-				mFiles[ i ].Tex = LoadImage( mFiles[ i ].Path, true );
+				mFiles[ i ].Tex = loadImage( mFiles[ i ].Path, true );
 			}
 			else
-				SetImage( mFiles[ i ].Tex, mFiles[ i ].Path );
+				setImage( mFiles[ i ].Tex, mFiles[ i ].Path );
 		}
 	}
 }
 
-void cApp::UnloadImage( const Uint32& img ) {
+void App::unloadImage( const Uint32& img ) {
 	if ( mFiles[ img ].Tex != 0 ) {
 		TF->remove( mFiles[ img ].Tex );
 		mFiles[ img ].Tex = 0;
 	}
 }
 
-void cApp::OptUpdate() {
+void App::optUpdate() {
 	mImg.createStatic( mFiles [ mCurImg ].Tex );
 	mImg.setScale( mConfig.DefaultImageZoom );
 	mImg.setPosition( 0.0f, 0.0f );
 
-	ScaleToScreen();
+	scaleToScreen();
 
 	if ( mConfig.LateLoading ) {
 		mLaterLoad = true;
@@ -540,36 +540,36 @@ void cApp::OptUpdate() {
 			);
 		}
 	} else
-		UpdateImages();
+		updateImages();
 }
 
-void cApp::LoadFirstImage() {
+void App::loadFirstImage() {
 	if ( mCurImg != 0 )
-		FastLoadImage( 0 );
+		fastLoadImage( 0 );
 }
 
-void cApp::LoadLastImage() {
+void App::loadLastImage() {
 	if ( mCurImg != (Int32)( mFiles.size() - 1 ) )
-		FastLoadImage( mFiles.size() - 1 );
+		fastLoadImage( mFiles.size() - 1 );
 }
 
-void cApp::LoadNextImage() {
+void App::loadNextImage() {
 	if ( ( mCurImg + 1 ) < (Int32)mFiles.size() ) {
-		CreateFade();
+		createFade();
 		mCurImg++;
-		OptUpdate();
+		optUpdate();
 	}
 }
 
-void cApp::LoadPrevImage() {
+void App::loadPrevImage() {
 	if ( ( mCurImg - 1 ) >= 0 ) {
-		CreateFade();
+		createFade();
 		mCurImg--;
-		OptUpdate();
+		optUpdate();
 	}
 }
 
-void cApp::SwitchFade() {
+void App::switchFade() {
 	if ( mConfig.Fade ) {
 		mAlpha = 255.0f;
 		mCurAlpha = 255;
@@ -581,7 +581,7 @@ void cApp::SwitchFade() {
 	mConfig.BlockWheelSpeed = !mConfig.BlockWheelSpeed;
 }
 
-void cApp::Input() {
+void App::input() {
 	KM->update();
 	Mouse = KM->getMousePos();
 
@@ -599,12 +599,12 @@ void cApp::Input() {
 		else
 			mWindow->toggleFullscreen();
 
-		PrepareFrame();
-		ScaleToScreen();
+		prepareFrame();
+		scaleToScreen();
 	}
 
 	if ( KM->isKeyUp(KEY_F5) ) {
-		SwitchFade();
+		switchFade();
 	}
 
 	if ( KM->isKeyUp(KEY_F3) || KM->isKeyUp(KEY_WORLD_26) ) {
@@ -623,8 +623,8 @@ void cApp::Input() {
 	if ( ( ( KM->isKeyUp(KEY_V) && KM->isControlPressed() ) || ( KM->isKeyUp(KEY_INSERT) && KM->isShiftPressed() ) ) && !Con.isActive() ) {
 		std::string tPath = mWindow->getClipboard()->getText();
 
-		if ( ( tPath.size() && IsImage( tPath ) ) || FileSystem::isDirectory( tPath ) ) {
-			LoadDir( tPath );
+		if ( ( tPath.size() && isImage( tPath ) ) || FileSystem::isDirectory( tPath ) ) {
+			loadDir( tPath );
 		}
 	}
 
@@ -632,16 +632,16 @@ void cApp::Input() {
 		if ( KM->mouseWheelScrolledUp() || KM->isKeyUp(KEY_PAGEUP) ) {
 			if ( !mConfig.BlockWheelSpeed || Sys::getTicks() - mLastWheelUse > mConfig.WheelBlockTime ) {
 				mLastWheelUse = Sys::getTicks();
-				LoadPrevImage();
-				DisableSlideShow();
+				loadPrevImage();
+				disableSlideShow();
 			}
 		}
 
 		if ( KM->mouseWheelScrolledDown() || KM->isKeyUp(KEY_PAGEDOWN) ) {
 			if ( !mConfig.BlockWheelSpeed || Sys::getTicks() - mLastWheelUse > mConfig.WheelBlockTime ) {
 				mLastWheelUse = Sys::getTicks();
-				LoadNextImage();
-				DisableSlideShow();
+				loadNextImage();
+				disableSlideShow();
 			}
 		}
 
@@ -652,17 +652,17 @@ void cApp::Input() {
 
 	if ( mFiles.size() && mFiles[ mCurImg ].Tex && !Con.isActive() ) {
 		if ( KM->isKeyUp(KEY_HOME) ) {
-			LoadFirstImage();
-			DisableSlideShow();
+			loadFirstImage();
+			disableSlideShow();
 		}
 
 		if ( KM->isKeyUp(KEY_END) ) {
-			LoadLastImage();
-			DisableSlideShow();
+			loadLastImage();
+			disableSlideShow();
 		}
 
 		if ( KM->isKeyUp(KEY_KP_MULTIPLY) ) {
-			ScaleToScreen();
+			scaleToScreen();
 		}
 
 		if ( KM->isKeyUp(KEY_KP_DIVIDE) ) {
@@ -670,7 +670,7 @@ void cApp::Input() {
 		}
 
 		if ( KM->isKeyUp(KEY_Z) ) {
-			ZoomImage();
+			zoomImage();
 		}
 
 		if ( KM->isKeyUp( KEY_N ) ) {
@@ -802,7 +802,7 @@ void cApp::Input() {
 
 		if ( KM->isKeyUp(KEY_R) ) {
 			mImg.setRotation( mImg.getRotation() + 90.0f );
-			ScaleToScreen();
+			scaleToScreen();
 		}
 
 		if ( KM->isKeyUp(KEY_A) ) {
@@ -820,7 +820,7 @@ void cApp::Input() {
 			mImg.setPosition( 0.0f,0.0f );
 			mImg.setScale( mConfig.DefaultImageZoom );
 			mImg.setRotation( 0.f );
-			ScaleToScreen();
+			scaleToScreen();
 
 			if ( EE->getCurrentWindow()->isMaximized() ) {
 				EE->getCurrentWindow()->setSize( mImg.getSize().getWidth(), mImg.getSize().getHeight() );
@@ -831,15 +831,15 @@ void cApp::Input() {
 			mImg.setPosition( 0.0f,0.0f );
 			mImg.setScale( mConfig.DefaultImageZoom );
 			mImg.setRotation( 0.f );
-			ScaleToScreen();
+			scaleToScreen();
 		}
 
 		if ( KM->isKeyUp(KEY_E) ) {
-			CreateSlideShow( mSlideTime );
+			createSlideShow( mSlideTime );
 		}
 
 		if ( KM->isKeyUp(KEY_D) ) {
-			DisableSlideShow();
+			disableSlideShow();
 		}
 
 		if ( KM->isKeyUp(KEY_K) ) {
@@ -853,7 +853,7 @@ void cApp::Input() {
 	}
 }
 
-void cApp::CreateSlideShow( Uint32 time ) {
+void App::createSlideShow( Uint32 time ) {
 	if ( time < 250 )
 		time = 250;
 
@@ -862,25 +862,25 @@ void cApp::CreateSlideShow( Uint32 time ) {
 	mSlideTicks	= Sys::getTicks();
 }
 
-void cApp::DisableSlideShow() {
+void App::disableSlideShow() {
 	mSlideShow = false;
 }
 
-void cApp::DoSlideShow() {
+void App::doSlideShow() {
 	if ( mSlideShow ) {
 		if ( Sys::getTicks() - mSlideTicks >= mSlideTime ) {
 			mSlideTicks = Sys::getTicks();
 
 			if ( (Uint32)( mCurImg + 1 ) < mFiles.size() ) {
-				LoadNextImage();
+				loadNextImage();
 			} else {
-				DisableSlideShow();
+				disableSlideShow();
 			}
 		}
 	}
 }
 
-void cApp::ScaleToScreen( const bool& force ) {
+void App::scaleToScreen( const bool& force ) {
 	if ( mFiles.size() && mFiles[ mCurImg ].Tex ) {
 		Texture* Tex = TF->getTexture( mFiles[ mCurImg ].Tex );
 
@@ -888,14 +888,14 @@ void cApp::ScaleToScreen( const bool& force ) {
 			return;
 
 		if ( Tex->getImageWidth() * mConfig.DefaultImageZoom >= Width || Tex->getImageHeight() * mConfig.DefaultImageZoom >= Height ) {
-			ZoomImage();
+			zoomImage();
 		} else if ( force ) {
 			mImg.setScale( mConfig.DefaultImageZoom );
 		}
 	}
 }
 
-void cApp::ZoomImage() {
+void App::zoomImage() {
 	if ( mFiles.size() && mFiles[ mCurImg ].Tex ) {
 		Texture* Tex = TF->getTexture( mFiles[ mCurImg ].Tex );
 
@@ -908,7 +908,7 @@ void cApp::ZoomImage() {
 	}
 }
 
-void cApp::PrepareFrame() {
+void App::prepareFrame() {
 	Width = mWindow->getWidth();
 	Height = mWindow->getHeight();
 	HWidth = Width * 0.5f;
@@ -925,13 +925,13 @@ void cApp::PrepareFrame() {
 	}
 }
 
-void cApp::Render() {
-	PrepareFrame();
+void App::render() {
+	prepareFrame();
 
-	DoSlideShow();
+	doSlideShow();
 
 	if ( mFiles.size() && mFiles[ mCurImg ].Tex ) {
-		DoFade();
+		doFade();
 
 		Texture * Tex = mImg.getCurrentSubTexture()->getTexture();
 
@@ -948,12 +948,12 @@ void cApp::Render() {
 	if ( mConfig.ShowInfo )
 		Fon->draw( 0, 0 );
 
-	PrintHelp();
+	printHelp();
 
 	Con.draw();
 }
 
-void cApp::CreateFade()  {
+void App::createFade()  {
 	if ( mConfig.Fade ) {
 		mAlpha = 0.0f;
 		mCurAlpha = 0;
@@ -962,7 +962,7 @@ void cApp::CreateFade()  {
 	}
 }
 
-void cApp::DoFade() {
+void App::doFade() {
 	if ( mConfig.Fade && mFading ) {
 		mAlpha += ( 255 * RET ) / mConfig.TransitionTime;
 		mCurAlpha = static_cast<Uint8> ( mAlpha );
@@ -986,7 +986,7 @@ void cApp::DoFade() {
 	}
 }
 
-void cApp::End() {
+void App::end() {
 	mConfig.Width			= EE->getWidth();
 	mConfig.Height			= EE->getHeight();
 	mConfig.MaximizeAtStart	= EE->getCurrentWindow()->isMaximized();
@@ -1016,7 +1016,7 @@ void cApp::End() {
 	Engine::destroySingleton();
 }
 
-std::string cApp::CreateSavePath( const std::string & oriPath, Uint32 width, Uint32 height, EE_SAVE_TYPE saveType ) {
+std::string App::createSavePath( const std::string & oriPath, Uint32 width, Uint32 height, EE_SAVE_TYPE saveType ) {
 	EE_SAVE_TYPE type = saveType == SAVE_TYPE_UNKNOWN ? Image::extensionToSaveType( FileSystem::fileExtension( oriPath ) ) : saveType;
 
 	if ( SAVE_TYPE_UNKNOWN == type ) {
@@ -1026,47 +1026,52 @@ std::string cApp::CreateSavePath( const std::string & oriPath, Uint32 width, Uin
 	return FileSystem::fileRemoveExtension( oriPath ) + "-" + String::toStr( width ) + "x" + String::toStr( height ) + "." + Image::saveTypeToExtension( type );
 }
 
-EE_SAVE_TYPE cApp::GetPathSaveType( const std::string& path ) {
+EE_SAVE_TYPE App::getPathSaveType( const std::string& path ) {
 	return Image::extensionToSaveType( FileSystem::fileExtension( path ) );
 }
 
-void cApp::ScaleImg( const std::string& Path, const Float& Scale , EE_SAVE_TYPE saveType ) {
+void App::scaleImg( const std::string& Path, const Float& Scale, const bool& overridePath, EE_SAVE_TYPE saveType ) {
 	int w, h, c;
 
 	if ( Image::getInfo( Path, &w, &h, &c ) && Scale > 0.f ) {
 		Int32 new_width		= static_cast<Int32>( w * Scale );
 		Int32 new_height	= static_cast<Int32>( h * Scale );
+		std::string outputPath( Path );
 
-		ResizeImg( Path, new_width, new_height, saveType );
+		if ( !overridePath )
+		{
+			outputPath = createSavePath( Path, new_width, new_height, saveType );
+		}
+
+		resizeImg( Path, outputPath, new_width, new_height, saveType );
 	} else {
 		Con.pushText( "Images does not exists." );
 	}
 }
 
-void cApp::ResizeImg( const std::string& Path, const Uint32& NewWidth, const Uint32& NewHeight, EE_SAVE_TYPE saveType ) {
-	if ( IsImage( Path ) ) {
-		std::string newPath( CreateSavePath( Path, NewWidth, NewHeight, saveType ) );
-		EE_SAVE_TYPE type = SAVE_TYPE_UNKNOWN != saveType ? saveType : GetPathSaveType( newPath );
+void App::resizeImg( const std::string& Path, const std::string& outputPath, const Uint32& NewWidth, const Uint32& NewHeight, EE_SAVE_TYPE saveType ) {
+	if ( isImage( Path ) ) {
+		EE_SAVE_TYPE type = SAVE_TYPE_UNKNOWN != saveType ? saveType : getPathSaveType( outputPath );
 
 		Image img( Path );
 
 		img.resize( NewWidth, NewHeight );
 
-		img.saveToFile( newPath, type );
+		img.saveToFile( outputPath, type );
 	} else {
 		Con.pushText( "Images does not exists." );
 	}
 }
 
-void cApp::ThumgnailImg( const std::string& Path, const Uint32& MaxWidth, const Uint32& MaxHeight, EE_SAVE_TYPE saveType ) {
-	if ( IsImage( Path ) ) {
+void App::thumgnailImg( const std::string& Path, const Uint32& MaxWidth, const Uint32& MaxHeight, EE_SAVE_TYPE saveType ) {
+	if ( isImage( Path ) ) {
 		Image img( Path );
 
 		Image * thumb = img.thumbnail( MaxWidth, MaxHeight );
 
 		if ( NULL != thumb ) {
-			std::string newPath( CreateSavePath( Path, thumb->getWidth(), thumb->getHeight(), saveType ) );
-			EE_SAVE_TYPE type = SAVE_TYPE_UNKNOWN != saveType ? saveType : GetPathSaveType( newPath );
+			std::string newPath( createSavePath( Path, thumb->getWidth(), thumb->getHeight(), saveType ) );
+			EE_SAVE_TYPE type = SAVE_TYPE_UNKNOWN != saveType ? saveType : getPathSaveType( newPath );
 
 			thumb->saveToFile( newPath, type );
 
@@ -1077,8 +1082,8 @@ void cApp::ThumgnailImg( const std::string& Path, const Uint32& MaxWidth, const 
 	}
 }
 
-void cApp::CenterCropImg( const std::string& Path, const Uint32& Width, const Uint32& Height, EE_SAVE_TYPE saveType ) {
-	if ( IsImage( Path ) ) {
+void App::centerCropImg( const std::string& Path, const Uint32& Width, const Uint32& Height, EE_SAVE_TYPE saveType ) {
+	if ( isImage( Path ) ) {
 		Image img( Path );
 
 		Sizei nSize;
@@ -1118,22 +1123,22 @@ void cApp::CenterCropImg( const std::string& Path, const Uint32& Width, const Ui
 		croppedImg = img.crop( rect );
 
 		if ( NULL != croppedImg ) {
-			std::string newPath( CreateSavePath( Path, croppedImg->getWidth(), croppedImg->getHeight(), saveType ) );
-			EE_SAVE_TYPE type = SAVE_TYPE_UNKNOWN != saveType ? saveType : GetPathSaveType( newPath );
+			std::string newPath( createSavePath( Path, croppedImg->getWidth(), croppedImg->getHeight(), saveType ) );
+			EE_SAVE_TYPE type = SAVE_TYPE_UNKNOWN != saveType ? saveType : getPathSaveType( newPath );
 
 			croppedImg->saveToFile( newPath, type );
 
 			eeSAFE_DELETE( croppedImg );
 		} else {
-			std::string newPath( CreateSavePath( Path, img.getWidth(), img.getHeight(), saveType ) );
-			EE_SAVE_TYPE type = SAVE_TYPE_UNKNOWN != saveType ? saveType : GetPathSaveType( newPath );
+			std::string newPath( createSavePath( Path, img.getWidth(), img.getHeight(), saveType ) );
+			EE_SAVE_TYPE type = SAVE_TYPE_UNKNOWN != saveType ? saveType : getPathSaveType( newPath );
 
 			img.saveToFile( newPath, type );
 		}
 	}
 }
 
-void cApp::BatchImgScale( const std::string& Path, const Float& Scale ) {
+void App::batchImgScale( const std::string& Path, const Float& Scale, const bool& overridePath ) {
 	std::string iPath = Path;
 	std::vector<std::string> tmpFiles = FileSystem::filesGetInPath( iPath );
 
@@ -1142,11 +1147,12 @@ void cApp::BatchImgScale( const std::string& Path, const Float& Scale ) {
 
 	for ( Int32 i = 0; i < (Int32)tmpFiles.size(); i++ ) {
 		std::string fPath = iPath + tmpFiles[i];
-		ScaleImg( fPath, Scale );
+
+		scaleImg( fPath, Scale, overridePath );
 	}
 }
 
-void cApp::BatchImgThumbnail( Sizei size, std::string dir, bool recursive ) {
+void App::batchImgThumbnail( Sizei size, std::string dir, bool recursive ) {
 	FileSystem::dirPathAddSlashAtEnd( dir );
 
 	std::vector<std::string> files = FileSystem::filesGetInPath( dir );
@@ -1156,7 +1162,7 @@ void cApp::BatchImgThumbnail( Sizei size, std::string dir, bool recursive ) {
 
 		if ( FileSystem::isDirectory( fpath ) ) {
 			if ( recursive ) {
-				BatchImgThumbnail( size, fpath, recursive );
+				batchImgThumbnail( size, fpath, recursive );
 			}
 		} else {
 			int w, h, c;
@@ -1181,7 +1187,7 @@ void cApp::BatchImgThumbnail( Sizei size, std::string dir, bool recursive ) {
 	}
 }
 
-void cApp::CmdSlideShow( const std::vector < String >& params ) {
+void App::cmdSlideShow( const std::vector < String >& params ) {
 	String Error( "Usage example: slideshow slide_time_in_ms" );
 
 	if ( params.size() >= 2 ) {
@@ -1191,7 +1197,7 @@ void cApp::CmdSlideShow( const std::vector < String >& params ) {
 
 		if ( Res ) {
 			if ( !mSlideShow ) {
-				CreateSlideShow( time );
+				createSlideShow( time );
 			} else {
 				if ( 0 == time ) {
 					mSlideShow = false;
@@ -1205,12 +1211,13 @@ void cApp::CmdSlideShow( const std::vector < String >& params ) {
 	}
 }
 
-void cApp::CmdImgResize( const std::vector < String >& params ) {
-	String Error( "Usage example: imgresize new_width new_height path_to_img format" );
+void App::cmdImgResize( const std::vector < String >& params ) {
+	String Error( "Usage example: imgresize new_width new_height path_to_img format override_image_path" );
 	if ( params.size() >= 3 ) {
 		Uint32 nWidth = 0;
 		Uint32 nHeight = 0;
 		EE_SAVE_TYPE saveType = SAVE_TYPE_UNKNOWN;
+		Uint32 override = 0;
 
 		bool Res1 = String::fromString<Uint32> ( nWidth, params[1] );
 		bool Res2 = String::fromString<Uint32> ( nHeight, params[2] );
@@ -1223,12 +1230,18 @@ void cApp::CmdImgResize( const std::vector < String >& params ) {
 			if ( params.size() > 4 ) {
 				saveType = Image::extensionToSaveType( params[4] );
 			}
+
+			if ( params.size() > 5 ) {
+				String::fromString<Uint32>( override, params[5] );
+			}
 		} else {
 			myPath = mFilePath + mFile;
 		}
 
 		if ( Res1 && Res2 ) {
-			ResizeImg( myPath, nWidth, nHeight, saveType );
+			std::string savePath = override != 0 ? myPath : createSavePath( myPath, nWidth, nHeight, saveType );
+
+			resizeImg( myPath, savePath, nWidth, nHeight, saveType );
 		} else {
 			Con.pushText( Error );
 		}
@@ -1237,7 +1250,7 @@ void cApp::CmdImgResize( const std::vector < String >& params ) {
 	}
 }
 
-void cApp::CmdImgThumbnail( const std::vector < String >& params ) {
+void App::cmdImgThumbnail( const std::vector < String >& params ) {
 	String Error( "Usage example: imgthumbnail max_width max_height path_to_img format" );
 	if ( params.size() >= 3 ) {
 		Uint32 nWidth = 0;
@@ -1260,7 +1273,7 @@ void cApp::CmdImgThumbnail( const std::vector < String >& params ) {
 		}
 
 		if ( Res1 && Res2 ) {
-			ThumgnailImg( myPath, nWidth, nHeight, saveType );
+			thumgnailImg( myPath, nWidth, nHeight, saveType );
 		} else {
 			Con.pushText( Error );
 		}
@@ -1269,7 +1282,7 @@ void cApp::CmdImgThumbnail( const std::vector < String >& params ) {
 	}
 }
 
-void cApp::CmdImgCenterCrop( const std::vector < String >& params ) {
+void App::cmdImgCenterCrop( const std::vector < String >& params ) {
 	String Error( "Usage example: imgcentercrop width height path_to_img format" );
 	if ( params.size() >= 3 ) {
 		Uint32 nWidth = 0;
@@ -1292,7 +1305,7 @@ void cApp::CmdImgCenterCrop( const std::vector < String >& params ) {
 		}
 
 		if ( Res1 && Res2 )
-			CenterCropImg( myPath, nWidth, nHeight, saveType );
+			centerCropImg( myPath, nWidth, nHeight, saveType );
 		else
 			Con.pushText( Error );
 	} else {
@@ -1300,11 +1313,12 @@ void cApp::CmdImgCenterCrop( const std::vector < String >& params ) {
 	}
 }
 
-void cApp::CmdImgScale( const std::vector < String >& params ) {
-	String Error( "Usage example: imgscale scale path_to_img format" );
+void App::cmdImgScale( const std::vector < String >& params ) {
+	String Error( "Usage example: imgscale scale path_to_img format override_path" );
 	if ( params.size() >= 2 ) {
 		Float Scale = 0;
 		EE_SAVE_TYPE saveType = SAVE_TYPE_UNKNOWN;
+		Uint32 override = 0;
 
 		bool Res = String::fromString<Float>( Scale, params[1] );
 
@@ -1316,12 +1330,16 @@ void cApp::CmdImgScale( const std::vector < String >& params ) {
 			if ( params.size() > 3 ) {
 				saveType = Image::extensionToSaveType( params[3] );
 			}
+
+			if ( params.size() > 4 ) {
+				String::fromString<Uint32>( override, params[4] );
+			}
 		} else {
 			myPath = mFilePath + mFile;
 		}
 
 		if ( Res )
-			ScaleImg( myPath, Scale, saveType );
+			scaleImg( myPath, Scale, 0 != override, saveType );
 		else
 			Con.pushText( Error );
 	} else {
@@ -1329,18 +1347,21 @@ void cApp::CmdImgScale( const std::vector < String >& params ) {
 	}
 }
 
-void cApp::CmdBatchImgScale( const std::vector < String >& params ) {
-	String Error( "Usage example: batchimgscale scale_value directory_to_resize_img ( if no dir is passed, it will use the current dir opened )" );
-	if ( params.size() >= 3 ) {
+void App::cmdBatchImgScale( const std::vector < String >& params ) {
+	String Error( "Usage example: batchimgscale scale_value override_img_path ( default disabled ) directory_to_resize_img ( if no dir is passed, it will use the current dir opened )" );
+	if ( params.size() >= 2 ) {
 		Float Scale = 0;
+		Uint32 override = 0;
 
 		bool Res = String::fromString<Float>( Scale, params[1] );
 
-		std::string myPath = params.size() >= 3 ? params[2].toUtf8() : mFilePath;
+		override = String::fromString<Uint32>( override, params[2] );
+
+		std::string myPath = params.size() >= 4 ? params[3].toUtf8() : mFilePath;
 
 		if ( Res ) {
 			if ( FileSystem::isDirectory( myPath ) ) {
-				BatchImgScale( myPath, Scale );
+				batchImgScale( myPath, Scale, 0 != override );
 			} else {
 				Con.pushText( "Second argument is not a directory!" );
 			}
@@ -1352,7 +1373,7 @@ void cApp::CmdBatchImgScale( const std::vector < String >& params ) {
 	}
 }
 
-void cApp::CmdBatchImgThumbnail( const std::vector < String >& params ) {
+void App::cmdBatchImgThumbnail( const std::vector < String >& params ) {
 	String Error( "Usage example: batchimgthumbnail max_width max_height directory_to_create_thumbs recursive ( if no dir is passed, it will use the current dir opened )" );
 
 	if ( params.size() >= 3 ) {
@@ -1370,7 +1391,7 @@ void cApp::CmdBatchImgThumbnail( const std::vector < String >& params ) {
 
 		if ( Res1 && Res2 ) {
 			if ( FileSystem::isDirectory( myPath ) ) {
-				BatchImgThumbnail( Sizei( max_width, max_height ), myPath, recursive );
+				batchImgThumbnail( Sizei( max_width, max_height ), myPath, recursive );
 			} else {
 				Con.pushText( "Third argument is not a directory!" );
 			}
@@ -1384,7 +1405,7 @@ void cApp::CmdBatchImgThumbnail( const std::vector < String >& params ) {
 	}
 }
 
-void cApp::CmdImgChangeFormat( const std::vector < String >& params ) {
+void App::cmdImgChangeFormat( const std::vector < String >& params ) {
 	String Error( "Usage example: imgchangeformat to_format image_to_reformat ( if null will use the current loaded image )" );
 	if ( params.size() >= 2 ) {
 		std::string toFormat = params[1].toUtf8();
@@ -1428,7 +1449,7 @@ void cApp::CmdImgChangeFormat( const std::vector < String >& params ) {
 	}
 }
 
-void cApp::CmdBatchImgChangeFormat( const std::vector < String >& params ) {
+void App::cmdBatchImgChangeFormat( const std::vector < String >& params ) {
 	String Error( "Usage example: batchimgchangeformat from_format to_format directory_to_reformat ( if no dir is passed, it will use the current dir opened )" );
 	if ( params.size() >= 4 ) {
 		std::string fromFormat = params[1].toUtf8();
@@ -1446,7 +1467,7 @@ void cApp::CmdBatchImgChangeFormat( const std::vector < String >& params ) {
 				std::string fPath 	= myPath + tmpFiles[i];
 				std::string fExt	= FileSystem::fileExtension( fPath );
 
-				if ( IsImage( fPath ) && fExt == fromFormat ) {
+				if ( isImage( fPath ) && fExt == fromFormat ) {
 					std::string fName;
 
 					if ( fExt != toFormat )
@@ -1473,7 +1494,7 @@ void cApp::CmdBatchImgChangeFormat( const std::vector < String >& params ) {
 	}
 }
 
-void cApp::CmdMoveTo( const std::vector < String >& params ) {
+void App::cmdMoveTo( const std::vector < String >& params ) {
 	if ( params.size() >= 2 ) {
 		Int32 tInt = 0;
 
@@ -1484,7 +1505,7 @@ void cApp::CmdMoveTo( const std::vector < String >& params ) {
 
 		if ( Res && tInt >= 0 && tInt < (Int32)mFiles.size() ) {
 			Con.pushText( "moveto: moving to image number " + String::toStr( tInt + 1 ) );
-			FastLoadImage( tInt );
+			fastLoadImage( tInt );
 		} else {
 			Con.pushText( "moveto: image number does not exists" );
 		}
@@ -1493,7 +1514,7 @@ void cApp::CmdMoveTo( const std::vector < String >& params ) {
 	}
 }
 
-void cApp::CmdSetBlockWheel( const std::vector < String >& params ) {
+void App::cmdSetBlockWheel( const std::vector < String >& params ) {
 	if ( params.size() >= 2 ) {
 		Int32 tInt = 0;
 
@@ -1508,7 +1529,7 @@ void cApp::CmdSetBlockWheel( const std::vector < String >& params ) {
 		Con.pushText( "Expected some parameter" );
 }
 
-void cApp::CmdSetLateLoading( const std::vector < String >& params ) {
+void App::cmdSetLateLoading( const std::vector < String >& params ) {
 	if ( params.size() >= 2 ) {
 		Int32 tInt = 0;
 
@@ -1523,7 +1544,7 @@ void cApp::CmdSetLateLoading( const std::vector < String >& params ) {
 		Con.pushText( "Expected some parameter" );
 }
 
-void cApp::CmdSetImgFade( const std::vector < String >& params ) {
+void App::cmdSetImgFade( const std::vector < String >& params ) {
 	if ( params.size() >= 2 ) {
 		Int32 tInt = 0;
 
@@ -1538,7 +1559,7 @@ void cApp::CmdSetImgFade( const std::vector < String >& params ) {
 		Con.pushText( "Expected some parameter" );
 }
 
-void cApp::CmdSetBackColor( const std::vector < String >& params ) {
+void App::cmdSetBackColor( const std::vector < String >& params ) {
 	String Error( "Usage example: setbackcolor 255 255 255 (RGB Color, numbers between 0 and 255)" );
 
 	if ( params.size() >= 2 ) {
@@ -1561,18 +1582,18 @@ void cApp::CmdSetBackColor( const std::vector < String >& params ) {
 	}
 }
 
-void cApp::CmdLoadImg( const std::vector < String >& params ) {
+void App::cmdLoadImg( const std::vector < String >& params ) {
 	if ( params.size() >= 2 ) {
 		std::string myPath = params[1].toUtf8();
 
-		if ( IsImage( myPath ) || IsHttpUrl( myPath ) ) {
-			LoadDir( myPath );
+		if ( isImage( myPath ) || IsHttpUrl( myPath ) ) {
+			loadDir( myPath );
 		} else
 			Con.pushText( "\"" + myPath + "\" is not an image path or the image is not supported." );
 	}
 }
 
-void cApp::CmdLoadDir( const std::vector < String >& params ) {
+void App::cmdLoadDir( const std::vector < String >& params ) {
 	if ( params.size() >= 2 ) {
 		std::string myPath = params[1].toUtf8();
 		if ( params.size() > 2 ) {
@@ -1581,13 +1602,13 @@ void cApp::CmdLoadDir( const std::vector < String >& params ) {
 		}
 
 		if ( FileSystem::isDirectory( myPath ) ) {
-			LoadDir( myPath );
+			loadDir( myPath );
 		} else
 			Con.pushText( "If you want to load an image use loadimg. \"" + myPath + "\" is not a directory path." );
 	}
 }
 
-void cApp::CmdSetZoom( const std::vector < String >& params ) {
+void App::cmdSetZoom( const std::vector < String >& params ) {
 	if ( params.size() >= 2 ) {
 		Float tFloat = 0;
 
@@ -1602,7 +1623,7 @@ void cApp::CmdSetZoom( const std::vector < String >& params ) {
 		Con.pushText( "Expected some parameter" );
 }
 
-void cApp::PrintHelp() {
+void App::printHelp() {
 	if ( mShowHelp ) {
 		Uint32 Top = 6;
 		Uint32 Left = 6;

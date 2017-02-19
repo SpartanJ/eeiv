@@ -3,74 +3,74 @@
 
 #include <eepp/ee.hpp>
 
-class cApp {
+class App {
 	public:
-		cApp( int argc, char *argv[] );
+		App( int argc, char *argv[] );
 
-		~cApp();
+		~App();
 
-		void Process();
-		void LoadDir( const std::string& path, const bool& getimages = true );
+		void process();
+		void loadDir( const std::string& path, const bool& getimages = true );
 	private:
-		bool Init();
-		void Input();
-		void Render();
-		void End();
-		void PrepareFrame();
-		void ScaleToScreen( const bool& force = false );
-		void GetImages();
-		Uint32 CurImagePos( const std::string& path );
-		Uint32 LoadImage( const std::string& path, const bool& SetAsCurrent = false );
-		void LoadNextImage();
-		void LoadPrevImage();
-		void ZoomImage();
-		void UnloadImage( const Uint32& img );
-		void UpdateImages();
-		void SetImage( const Uint32& Tex, const std::string& path );
-		void FastLoadImage( const Uint32& ImgNum );
-		void DoFade();
-		void CreateFade();
-		void OptUpdate();
-		void PrintHelp();
-		void LoadFirstImage();
-		void LoadLastImage();
-		void GetConfig();
-		void LoadConfig();
-		void ClearTempDir();
-		void VideoResize();
-		void RestoreMouse();
-		void BatchImgScale( const std::string& Path, const Float& Scale );
-		void ScaleImg( const std::string& Path, const Float& Scale, EE_SAVE_TYPE saveType = SAVE_TYPE_UNKNOWN );
-		void ResizeImg( const std::string& Path, const Uint32& NewWidth, const Uint32& NewHeight, EE_SAVE_TYPE saveType = SAVE_TYPE_UNKNOWN );
-		void ThumgnailImg( const std::string& Path, const Uint32& MaxWidth, const Uint32& MaxHeight, EE_SAVE_TYPE saveType = SAVE_TYPE_UNKNOWN );
-		void CenterCropImg( const std::string& Path, const Uint32& Width, const Uint32& Height, EE_SAVE_TYPE saveType = SAVE_TYPE_UNKNOWN );
-		void SwitchFade();
-		void DoSlideShow();
-		void CreateSlideShow( Uint32 time );
-		void DisableSlideShow();
-		void BatchImgThumbnail( Sizei size, std::string dir, bool recursive );
+		bool init();
+		void input();
+		void render();
+		void end();
+		void prepareFrame();
+		void scaleToScreen( const bool& force = false );
+		void getImages();
+		Uint32 curImagePos( const std::string& path );
+		Uint32 loadImage( const std::string& path, const bool& SetAsCurrent = false );
+		void loadNextImage();
+		void loadPrevImage();
+		void zoomImage();
+		void unloadImage( const Uint32& img );
+		void updateImages();
+		void setImage( const Uint32& Tex, const std::string& path );
+		void fastLoadImage( const Uint32& ImgNum );
+		void doFade();
+		void createFade();
+		void optUpdate();
+		void printHelp();
+		void loadFirstImage();
+		void loadLastImage();
+		void getConfig();
+		void loadConfig();
+		void clearTempDir();
+		void videoResize();
+		void restoreMouse();
+		void batchImgScale(const std::string& Path, const Float& Scale , const bool & overridePath);
+		void scaleImg(const std::string& Path, const Float& Scale, const bool & overridePath, EE_SAVE_TYPE saveType = SAVE_TYPE_UNKNOWN );
+		void resizeImg(const std::string& Path, const std::string & outputPath, const Uint32& NewWidth, const Uint32& NewHeight, EE_SAVE_TYPE saveType = SAVE_TYPE_UNKNOWN );
+		void thumgnailImg( const std::string& Path, const Uint32& MaxWidth, const Uint32& MaxHeight, EE_SAVE_TYPE saveType = SAVE_TYPE_UNKNOWN );
+		void centerCropImg( const std::string& Path, const Uint32& Width, const Uint32& Height, EE_SAVE_TYPE saveType = SAVE_TYPE_UNKNOWN );
+		void switchFade();
+		void doSlideShow();
+		void createSlideShow( Uint32 time );
+		void disableSlideShow();
+		void batchImgThumbnail( Sizei size, std::string dir, bool recursive );
 
-		void CmdLoadDir( const std::vector < String >& params );
-		void CmdLoadImg( const std::vector < String >& params );
-		void CmdSetBackColor( const std::vector < String >& params );
-		void CmdSetImgFade( const std::vector < String >& params );
-		void CmdSetLateLoading( const std::vector < String >& params );
-		void CmdSetBlockWheel( const std::vector < String >& params );
-		void CmdMoveTo( const std::vector < String >& params );
-		void CmdBatchImgScale( const std::vector < String >& params );
-		void CmdBatchImgChangeFormat( const std::vector < String >& params );
-		void CmdBatchImgThumbnail( const std::vector < String >& params );
-		void CmdImgChangeFormat( const std::vector < String >& params );
-		void CmdImgResize( const std::vector < String >& params );
-		void CmdImgScale( const std::vector < String >& params );
-		void CmdImgThumbnail( const std::vector < String >& params );
-		void CmdImgCenterCrop( const std::vector < String >& params );
-		void CmdSlideShow( const std::vector < String >& params );
-		void CmdSetZoom( const std::vector < String >& params );
+		void cmdLoadDir( const std::vector < String >& params );
+		void cmdLoadImg( const std::vector < String >& params );
+		void cmdSetBackColor( const std::vector < String >& params );
+		void cmdSetImgFade( const std::vector < String >& params );
+		void cmdSetLateLoading( const std::vector < String >& params );
+		void cmdSetBlockWheel( const std::vector < String >& params );
+		void cmdMoveTo( const std::vector < String >& params );
+		void cmdBatchImgScale( const std::vector < String >& params );
+		void cmdBatchImgChangeFormat( const std::vector < String >& params );
+		void cmdBatchImgThumbnail( const std::vector < String >& params );
+		void cmdImgChangeFormat( const std::vector < String >& params );
+		void cmdImgResize( const std::vector < String >& params );
+		void cmdImgScale( const std::vector < String >& params );
+		void cmdImgThumbnail( const std::vector < String >& params );
+		void cmdImgCenterCrop( const std::vector < String >& params );
+		void cmdSlideShow( const std::vector < String >& params );
+		void cmdSetZoom( const std::vector < String >& params );
 
-		std::string CreateSavePath( const std::string& oriPath, Uint32 width, Uint32 height , EE_SAVE_TYPE saveType = SAVE_TYPE_UNKNOWN );
+		std::string createSavePath( const std::string& oriPath, Uint32 width, Uint32 height , EE_SAVE_TYPE saveType = SAVE_TYPE_UNKNOWN );
 
-		EE_SAVE_TYPE GetPathSaveType( const std::string& path );
+		EE_SAVE_TYPE getPathSaveType( const std::string& path );
 
 		Engine * EE;
 		TextureFactory * TF;
