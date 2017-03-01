@@ -613,7 +613,7 @@ void App::input() {
 
 	if ( ( KM->isKeyUp(KEY_S) && !Con.isActive() ) || KM->isKeyUp(KEY_F4) ) {
 		mCursor = !mCursor;
-		mWindow->getCursorManager()->visible( mCursor );
+		mWindow->getCursorManager()->setVisible( mCursor );
 	}
 
 	if ( KM->isKeyUp(KEY_H) && !Con.isActive() ) {
