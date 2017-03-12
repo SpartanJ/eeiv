@@ -82,6 +82,8 @@ class App {
 
 		Font * Fon; //! Default App Font
 		Font * Mon; //! Console App Font
+		TextCache FonCache;
+		TextCache MonCache;
 
 		TTFFont * TTF, * TTFMon;
 		TextureFont * TexF, * TexFMon;

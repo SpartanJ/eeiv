@@ -232,6 +232,9 @@ bool App::init() {
 			Mon = reinterpret_cast<Font*> ( TTFMon );
 		}
 
+		FonCache.setFont( Fon );
+		MonCache.setFont( Mon );
+
 		Log::instance()->writef( "Fonts loading time: %f ms", TE.getElapsed().asMilliseconds() );
 
 		if ( !Fon && !Mon )
@@ -465,7 +468,7 @@ void App::setImage( const Uint32& Tex, const std::string& path ) {
 		Texture * pTex = TF->getTexture( Tex );
 
 		if ( NULL != pTex ) {
-			Fon->setText(
+			FonCache.setText(
 				"File: " + String::fromUtf8( mFile ) +
 				"\nWidth: " + String::toStr( pTex->getWidth() ) +
 				"\nHeight: " + String::toStr( pTex->getHeight() ) +
@@ -473,7 +476,7 @@ void App::setImage( const Uint32& Tex, const std::string& path ) {
 			);
 		}
 	} else {
-		Fon->setText( "File: " + String::fromUtf8( path ) + " failed to load. \nReason: " + Image::getLastFailureReason() );
+		FonCache.setText( "File: " + String::fromUtf8( path ) + " failed to load. \nReason: " + Image::getLastFailureReason() );
 	}
 }
 
@@ -532,7 +535,7 @@ void App::optUpdate() {
 		Texture * Tex = TF->getTexture( mFiles [ mCurImg ].Tex );
 
 		if ( Tex ) {
-			Fon->setText(
+			FonCache.setText(
 				"File: " + String::fromUtf8( mFiles [ mCurImg ].Path ) +
 				"\nWidth: " + String::toStr( Tex->getWidth() ) +
 				"\nHeight: " + String::toStr( Tex->getHeight() ) +
@@ -946,7 +949,7 @@ void App::render() {
 	}
 
 	if ( mConfig.ShowInfo )
-		Fon->draw( 0, 0 );
+		FonCache.draw( 0, 0 );
 
 	printHelp();
 
