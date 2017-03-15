@@ -82,11 +82,9 @@ class App {
 
 		Font * Fon; //! Default App Font
 		Font * Mon; //! Console App Font
-		TextCache FonCache;
-		TextCache MonCache;
+		Text FonCache;
 
-		TTFFont * TTF, * TTFMon;
-		TextureFont * TexF, * TexFMon;
+		FontTrueType * TTF, * TTFMon;
 
 		Console Con; //! Console Instance
 
@@ -169,7 +167,7 @@ class App {
 
 		Clock TE;
 
-		TextCache * mHelpCache;
+		Text * mHelpCache;
 
 		bool	mSlideShow;
 		Uint32	mSlideTime;

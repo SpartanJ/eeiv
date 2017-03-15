@@ -195,45 +195,35 @@ bool App::init() {
 
 		std::string MyFontPath = MyPath + "assets/fonts" + FileSystem::getOSlash();
 
-		if ( FileSystem::fileExists( MyFontPath + "DejaVuSans.dds" ) && FileSystem::fileExists( MyFontPath + "DejaVuSans.dat" ) && FileSystem::fileExists( MyFontPath + "DejaVuSansMono.dds" ) && FileSystem::fileExists( MyFontPath + "DejaVuSansMono.dat" ) ) {
-			TexF 	= TextureFont::New( "DejaVuSans" );
-			TexFMon = TextureFont::New( "DejaVuSansMono" );
+		TTF 	= FontTrueType::New( "DejaVuSans" );
+		TTFMon 	= FontTrueType::New( "DejaVuSansMono" );
 
-			TexF->load( TF->load( MyFontPath + "DejaVuSans.dds" ), MyFontPath + "DejaVuSans.dat" );
-			TexFMon->load( TF->load( MyFontPath + "DejaVuSansMono.dds" ), MyFontPath + "DejaVuSansMono.dat" );
+		#if EE_PLATFORM == EE_PLATFORM_WIN
+		std::string fontsPath( GetWindowsPath() + "\\Fonts\\" );
+		#else
+		std::string fontsPath( "/usr/share/fonts/truetype/" );
+		#endif
 
-			Fon = reinterpret_cast<Font*> ( TexF );
-			Mon = reinterpret_cast<Font*> ( TexFMon );
+		if ( FileSystem::fileExists( fontsPath + "DejaVuSans.ttf" ) && FileSystem::fileExists( fontsPath + "DejaVuSansMono.ttf" ) ) {
+			TTF->loadFromFile( fontsPath + "DejaVuSans.ttf" );
+			TTFMon->loadFromFile( fontsPath + "DejaVuSansMono.ttf" );
+		} else if ( FileSystem::fileExists( MyFontPath + "DejaVuSans.ttf" ) && FileSystem::fileExists( MyFontPath + "DejaVuSansMono.ttf" ) ) {
+			TTF->loadFromFile( MyFontPath + "DejaVuSans.ttf" );
+			TTFMon->loadFromFile( MyFontPath + "DejaVuSansMono.ttf" );
+		} else if ( FileSystem::fileExists( fontsPath + "Arial.ttf" ) && FileSystem::fileExists( fontsPath + "cour.ttf" ) ) {
+			TTF->loadFromFile( fontsPath + "Arial.ttf" );
+			TTFMon->loadFromFile( fontsPath + "cour.ttf" );
 		} else {
-			TTF 	= TTFFont::New( "DejaVuSans" );
-			TTFMon 	= TTFFont::New( "DejaVuSansMono" );
-
-			#if EE_PLATFORM == EE_PLATFORM_WIN
-			std::string fontsPath( GetWindowsPath() + "\\Fonts\\" );
-			#else
-			std::string fontsPath( "/usr/share/fonts/truetype/" );
-			#endif
-
-			if ( FileSystem::fileExists( fontsPath + "DejaVuSans.ttf" ) && FileSystem::fileExists( fontsPath + "DejaVuSansMono.ttf" ) ) {
-				TTF->load( fontsPath + "DejaVuSans.ttf", mConfig.AppFontSize, TTF_STYLE_NORMAL, 512, RGB(), 1, RGB(0,0,0) );
-				TTFMon->load( fontsPath + "DejaVuSansMono.ttf", mConfig.ConsoleFontSize, TTF_STYLE_NORMAL, 512, RGB(), 1, RGB(0,0,0) );
-			} else if ( FileSystem::fileExists( MyFontPath + "DejaVuSans.ttf" ) && FileSystem::fileExists( MyFontPath + "DejaVuSansMono.ttf" ) ) {
-				TTF->load( MyFontPath + "DejaVuSans.ttf", mConfig.AppFontSize, TTF_STYLE_NORMAL, 512, RGB(), 1, RGB(0,0,0) );
-				TTFMon->load( MyFontPath + "DejaVuSansMono.ttf", mConfig.ConsoleFontSize, TTF_STYLE_NORMAL, 512, RGB(), 1, RGB(0,0,0) );
-			} else if ( FileSystem::fileExists( fontsPath + "Arial.ttf" ) && FileSystem::fileExists( fontsPath + "cour.ttf" ) ) {
-				TTF->load( fontsPath + "Arial.ttf", mConfig.AppFontSize, TTF_STYLE_NORMAL, 512, RGB(), 1, RGB(0,0,0) );
-				TTFMon->load( fontsPath + "cour.ttf", mConfig.ConsoleFontSize, TTF_STYLE_NORMAL, 512, RGB(), 0, RGB(0,0,0) );
-			} else {
-				Log::instance()->writef( "Fonts not found... closing." );
-				return false;
-			}
-
-			Fon = reinterpret_cast<Font*> ( TTF );
-			Mon = reinterpret_cast<Font*> ( TTFMon );
+			Log::instance()->writef( "Fonts not found... closing." );
+			return false;
 		}
 
+		Fon = reinterpret_cast<Font*> ( TTF );
+		Mon = reinterpret_cast<Font*> ( TTFMon );
+
 		FonCache.setFont( Fon );
-		MonCache.setFont( Mon );
+		FonCache.setCharacterSize( mConfig.AppFontSize );
+		FonCache.setOutlineThickness( PixelDensity::dpToPxI(1) );
 
 		Log::instance()->writef( "Fonts loading time: %f ms", TE.getElapsed().asMilliseconds() );
 
@@ -242,6 +232,7 @@ bool App::init() {
 
 		Con.create( Mon, true, true, 1024000 );
 		Con.ignoreCharOnPrompt( 186 );
+		Con.setCharacterSize( mConfig.ConsoleFontSize );
 
 		Con.addCommand( "loaddir", cb::Make1( this, &App::cmdLoadDir ) );
 		Con.addCommand( "loadimg", cb::Make1( this, &App::cmdLoadImg ) );
@@ -468,7 +459,7 @@ void App::setImage( const Uint32& Tex, const std::string& path ) {
 		Texture * pTex = TF->getTexture( Tex );
 
 		if ( NULL != pTex ) {
-			FonCache.setText(
+			FonCache.setString(
 				"File: " + String::fromUtf8( mFile ) +
 				"\nWidth: " + String::toStr( pTex->getWidth() ) +
 				"\nHeight: " + String::toStr( pTex->getHeight() ) +
@@ -476,14 +467,14 @@ void App::setImage( const Uint32& Tex, const std::string& path ) {
 			);
 		}
 	} else {
-		FonCache.setText( "File: " + String::fromUtf8( path ) + " failed to load. \nReason: " + Image::getLastFailureReason() );
+		FonCache.setString( "File: " + String::fromUtf8( path ) + " failed to load. \nReason: " + Image::getLastFailureReason() );
 	}
 }
 
 Uint32 App::loadImage( const std::string& path, const bool& SetAsCurrent ) {
 	Uint32 TexId 		= 0;
 
-	TexId = TF->load( mFilePath + path );
+	TexId = TF->loadFromFile( mFilePath + path );
 
 	if ( SetAsCurrent )
 		setImage( TexId, path );
@@ -535,7 +526,7 @@ void App::optUpdate() {
 		Texture * Tex = TF->getTexture( mFiles [ mCurImg ].Tex );
 
 		if ( Tex ) {
-			FonCache.setText(
+			FonCache.setString(
 				"File: " + String::fromUtf8( mFiles [ mCurImg ].Path ) +
 				"\nWidth: " + String::toStr( Tex->getWidth() ) +
 				"\nHeight: " + String::toStr( Tex->getHeight() ) +
@@ -1575,7 +1566,7 @@ void App::cmdSetBackColor( const std::vector < String >& params ) {
 			bool Res3 = String::fromString<Int32>( B, params[3] );
 
 			if ( Res1 && Res2 && Res3 && ( R <= 255 && R >= 0 ) && ( G <= 255 && G >= 0 ) && ( B <= 255 && B >= 0 ) ) {
-				mWindow->setBackColor( RGB( R,G,B ) );
+				mWindow->setClearColor( RGB( R,G,B ) );
 				Con.pushText( "setbackcolor applied" );
 				return;
 			}
@@ -1658,7 +1649,7 @@ void App::printHelp() {
 			HT += "Key HOME: Go to the first screenshot on the folder\n";
 			HT += "Key END: Go to the last screenshot on the folder";
 
-			mHelpCache = eeNew( TextCache, ( Fon, HT ) );
+			mHelpCache = eeNew( Text, ( HT, Fon, mConfig.AppFontSize ) );
 		}
 
 		mHelpCache->draw( Left, Height - Top - mHelpCache->getTextHeight() );
