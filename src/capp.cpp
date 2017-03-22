@@ -981,8 +981,8 @@ void App::doFade() {
 }
 
 void App::end() {
-	mConfig.Width			= EE->getWidth();
-	mConfig.Height			= EE->getHeight();
+	mConfig.Width			= EE->getCurrentWindow()->getWidth();
+	mConfig.Height			= EE->getCurrentWindow()->getHeight();
 	mConfig.MaximizeAtStart	= EE->getCurrentWindow()->isMaximized();
 
 	Ini.setValueI( "Window", "Width", mConfig.Width );
