@@ -1,12 +1,17 @@
 #include <eepp/config.hpp>
 
+// This application is not meant to be used as an example of beautiful code,
+// it's just old code that works fine and looks ugly. It was made exclusively
+// for my personal use, and still manages to satisfy my very basic image viewing necessities.
+// Some day i'll make this look good.
+
 #if EE_PLATFORM == EE_PLATFORM_WIN
 #include <string>
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
 #endif
 #include <windows.h>
-static std::string GetWindowsPath() {
+static std::string getWindowsPath() {
 	#ifdef UNICODE
 		wchar_t Buffer[1024];
 		GetWindowsDirectory( Buffer, 1024 );
@@ -45,7 +50,7 @@ static bool isImage( const std::string& path ) {
 	return false;
 }
 
-static bool IsHttpUrl( const std::string& path ) {
+static bool isHttpUrl( const std::string& path ) {
 	return path.substr(0,7) == "http://" || path.substr(0,8) == "https://";
 }
 
@@ -61,9 +66,11 @@ App::App( int argc, char *argv[] ) :
 	mMouseLeftPressing(false),
 	mMouseMiddlePressing(false),
 	mImgRT(RN_NORMAL),
+	mFilter(TEX_FILTER_LINEAR),
 	mShowHelp(false),
 	mFirstLoad(false),
 	mUsedTempDir(false),
+	mLockZoomAndPosition(false),
 	mHelpCache( NULL ),
 	mSlideShow(false),
 	mSlideTime(4000),
@@ -95,7 +102,7 @@ void App::getConfig() {
 	mConfig.VSync = Ini.getValueI( "Window", "VSync", true );
 	mConfig.DoubleBuffering = Ini.getValueB( "Window", "DoubleBuffering", true );
 	mConfig.UseDesktopResolution = Ini.getValueB( "Window", "UseDesktopResolution", false );
-	mConfig.NoFrame = Ini.getValueB( "Window", "NoFrame", false );
+	mConfig.NoFrame = Ini.getValueB( "Window", "Borderless", false );
 	mConfig.MaximizeAtStart = Ini.getValueB( "Window", "MaximizeAtStart", true );
 	mConfig.FrameLimit = Ini.getValueI( "Window", "FrameLimit", 0 );
 	mConfig.Fade = Ini.getValueB( "Viewer", "Fade", true );
@@ -125,7 +132,7 @@ void App::loadConfig() {
 		Ini.setValueI( "Window", "VSync", 1 );
 		Ini.setValueI( "Window", "DoubleBuffering", 1 );
 		Ini.setValueI( "Window", "UseDesktopResolution", 0 );
-		Ini.setValueI( "Window", "NoFrame", 0 );
+		Ini.setValueI( "Window", "Borderless", 0 );
 		Ini.setValueI( "Window", "MaximizeAtStart", 1 );
 		Ini.setValueI( "Window", "FrameLimit", 0 );
 		Ini.setValueI( "Viewer", "Fade", 1 );
@@ -151,20 +158,6 @@ bool App::init() {
 
 	EE 		= Engine::instance();
 	MyPath 	= Sys::getProcessPath();
-
-	Uint32 Style = WindowStyle::Titlebar;
-
-	if ( mConfig.NoFrame )
-		Style = WindowStyle::NoBorder;
-
-	if ( !mConfig.Windowed )
-		Style |= WindowStyle::Fullscreen;
-
-	if ( mConfig.Resizeable )
-		Style |= WindowStyle::Resize;
-
-	if ( mConfig.UseDesktopResolution )
-		Style |= WindowStyle::UseDesktopResolution;
 
 	std::string iconp( MyPath + "assets/eeiv.png" );
 
@@ -199,7 +192,7 @@ bool App::init() {
 		TTFMon 	= FontTrueType::New( "DejaVuSansMono" );
 
 		#if EE_PLATFORM == EE_PLATFORM_WIN
-		std::string fontsPath( GetWindowsPath() + "\\Fonts\\" );
+		std::string fontsPath( getWindowsPath() + "\\Fonts\\" );
 		#else
 		std::string fontsPath( "/usr/share/fonts/truetype/" );
 		#endif
@@ -318,7 +311,7 @@ void App::loadDir( const std::string& path, const bool& getimages ) {
 			mFilePath = path.substr( 7 );
 			mFilePath = mFilePath.substr( 0, mFilePath.find_last_of( FileSystem::getOSlash() ) );
 			tmpFile = path.substr( path.find_last_of( FileSystem::getOSlash() ) + 1 );
-		} else if ( IsHttpUrl( path ) ) {
+		} else if ( isHttpUrl( path ) ) {
 			mUsedTempDir = true;
 
 			if ( !FileSystem::isDirectory( mTmpPath ) )
@@ -444,19 +437,27 @@ void App::setImage( const Uint32& Tex, const std::string& path ) {
 
 		mImgRT = RN_NORMAL;
 
+		Vector2f scale( mImg.getScale() );
 		mImg.createStatic( Tex );
 		mImg.setRenderMode( mImgRT );
-		mImg.setScale( mConfig.DefaultImageZoom );
-		mImg.setPosition( 0.0f, 0.0f );
+		mImg.setScale(scale);
+
+		if ( !mLockZoomAndPosition ) {
+			mImg.setScale( mConfig.DefaultImageZoom );
+			mImg.setPosition( Vector2f::Zero );
+		}
 
 		if ( path != mFiles[ mCurImg ].Path )
 			mCurImg = curImagePos( path );
 
 		mFile = mFiles[ mCurImg ].Path;
 
-		scaleToScreen();
+		if ( !mLockZoomAndPosition )
+			scaleToScreen();
 
 		Texture * pTex = TF->getTexture( Tex );
+
+		pTex->setFilter( mFilter );
 
 		if ( NULL != pTex ) {
 			FonCache.setString(
@@ -513,11 +514,15 @@ void App::unloadImage( const Uint32& img ) {
 }
 
 void App::optUpdate() {
+	Vector2f scale( mImg.getScale() );
 	mImg.createStatic( mFiles [ mCurImg ].Tex );
-	mImg.setScale( mConfig.DefaultImageZoom );
-	mImg.setPosition( 0.0f, 0.0f );
+	mImg.setScale( scale );
 
-	scaleToScreen();
+	if ( !mLockZoomAndPosition ) {
+		mImg.setScale( mConfig.DefaultImageZoom );
+		mImg.setPosition( Vector2f::Zero );
+		scaleToScreen();
+	}
 
 	if ( mConfig.LateLoading ) {
 		mLaterLoad = true;
@@ -691,23 +696,23 @@ void App::input() {
 		}
 
 		if ( KM->isKeyDown(KEY_LEFT) ) {
-			mImg.setX( ( mImg.getX() + ( (mWindow->getElapsed().asMilliseconds() * 0.4f) ) ) );
-			mImg.setX( static_cast<Float> ( static_cast<Int32> ( mImg.getX() ) ) );
+			Vector2f nPos( (Float)( (Int32)( mImg.getPosition().x + ( (mWindow->getElapsed().asMilliseconds() * 0.4f ) ) ) ), mImg.getPosition().y );
+			mImg.setPosition( nPos );
 		}
 
 		if ( KM->isKeyDown(KEY_RIGHT) ) {
-			mImg.setX( ( mImg.getX() + ( -(mWindow->getElapsed().asMilliseconds() * 0.4f) ) ) );
-			mImg.setX( static_cast<Float> ( static_cast<Int32> ( mImg.getX() ) ) );
+			Vector2f nPos( (Float)( (Int32)( mImg.getPosition().x + ( -(mWindow->getElapsed().asMilliseconds() * 0.4f) ) ) ), mImg.getPosition().y );
+			mImg.setPosition( nPos );
 		}
 
 		if ( KM->isKeyDown(KEY_UP) ) {
-			mImg.setY( ( mImg.getY() + ( (mWindow->getElapsed().asMilliseconds() * 0.4f) ) ) );
-			mImg.setY( static_cast<Float> ( static_cast<Int32> ( mImg.getY() ) ) );
+			Vector2f nPos( mImg.getPosition().x, (Float)( (Int32)( mImg.getPosition().y + ( (mWindow->getElapsed().asMilliseconds() * 0.4f) ) ) ) );
+			mImg.setPosition( nPos );
 		}
 
 		if ( KM->isKeyDown(KEY_DOWN) ) {
-			mImg.setY( ( mImg.getY() + ( -(mWindow->getElapsed().asMilliseconds() * 0.4f) ) ) );
-			mImg.setY( static_cast<Float> ( static_cast<Int32> ( mImg.getY() ) ) );
+			Vector2f nPos( mImg.getPosition().x, (Float)( (Int32)( mImg.getPosition().y + ( -(mWindow->getElapsed().asMilliseconds() * 0.4f) ) ) ) );
+			mImg.setPosition( nPos );
 		}
 
 		if ( KM->mouseLeftClicked() ) {
@@ -727,8 +732,7 @@ void App::input() {
 
 				if ( mNewPos.x != 0 || mNewPos.y != 0 ) {
 					mMouseLeftStartClick = Mouse;
-					mImg.setX( mImg.getX() + mNewPos.x );
-					mImg.setY( mImg.getY() + mNewPos.y );
+					mImg.setPosition( Vector2f( mImg.getPosition().x + mNewPos.x, mImg.getPosition().y + mNewPos.y ) );
 				}
 			}
 		}
@@ -800,18 +804,17 @@ void App::input() {
 		}
 
 		if ( KM->isKeyUp(KEY_A) ) {
+			mFilter = mFilter == TEX_FILTER_LINEAR ? TEX_FILTER_NEAREST : TEX_FILTER_LINEAR;
+
 			Texture * Tex = mImg.getCurrentSubTexture()->getTexture();
 
 			if ( Tex ) {
-				if ( Tex->getFilter() == TEX_FILTER_LINEAR )
-					Tex->setFilter( TEX_FILTER_NEAREST );
-				else
-					Tex->setFilter( TEX_FILTER_LINEAR );
+				Tex->setFilter( mFilter );
 			}
 		}
 
 		if ( KM->isKeyUp(KEY_M) ) {
-			mImg.setPosition( 0.0f,0.0f );
+			mImg.setPosition( Vector2f::Zero );
 			mImg.setScale( mConfig.DefaultImageZoom );
 			mImg.setRotation( 0.f );
 			scaleToScreen();
@@ -822,7 +825,7 @@ void App::input() {
 		}
 
 		if ( KM->isKeyUp(KEY_T) ) {
-			mImg.setPosition( 0.0f,0.0f );
+			mImg.setPosition( Vector2f::Zero );
 			mImg.setScale( mConfig.DefaultImageZoom );
 			mImg.setRotation( 0.f );
 			scaleToScreen();
@@ -842,6 +845,19 @@ void App::input() {
 			if ( NULL != mImg.getCurrentSubTexture() && NULL != ( curTex = mImg.getCurrentSubTexture()->getTexture() ) ) {
 				curTex->setMipmap( !curTex->getMipmap() );
 				curTex->reload();
+			}
+		}
+
+		if ( KM->isKeyUp(KEY_L) ) {
+			mLockZoomAndPosition = !mLockZoomAndPosition;
+		}
+
+		if ( KM->isKeyUp(KEY_F5) ) {
+			Texture * curTex;
+
+			if ( NULL != mImg.getCurrentSubTexture() && NULL != ( curTex = mImg.getCurrentSubTexture()->getTexture() ) ) {
+				Image img ( curTex->getFilepath() );
+				curTex->replace( &img );
 			}
 		}
 	}
@@ -1489,7 +1505,7 @@ void App::cmdBatchImgChangeFormat( const std::vector < String >& params ) {
 }
 
 void App::cmdMoveTo( const std::vector < String >& params ) {
-	if ( params.size() >= 2 ) {
+	if ( params.size() >= 2 && mFiles.size() > 0 ) {
 		Int32 tInt = 0;
 
 		bool Res = String::fromString<Int32>( tInt, params[1] );
@@ -1500,6 +1516,12 @@ void App::cmdMoveTo( const std::vector < String >& params ) {
 		if ( Res && tInt >= 0 && tInt < (Int32)mFiles.size() ) {
 			Con.pushText( "moveto: moving to image number " + String::toStr( tInt + 1 ) );
 			fastLoadImage( tInt );
+		} else if ( params[1] == "last" ) {
+			Con.pushText( "moveto: moving to last" );
+			fastLoadImage( mFiles.size() - 1 );
+		} else if ( params[1] == "first" ) {
+			Con.pushText( "moveto: moving to first" );
+			fastLoadImage( 0 );
 		} else {
 			Con.pushText( "moveto: image number does not exists" );
 		}
@@ -1566,7 +1588,7 @@ void App::cmdSetBackColor( const std::vector < String >& params ) {
 			bool Res3 = String::fromString<Int32>( B, params[3] );
 
 			if ( Res1 && Res2 && Res3 && ( R <= 255 && R >= 0 ) && ( G <= 255 && G >= 0 ) && ( B <= 255 && B >= 0 ) ) {
-				mWindow->setClearColor( RGB( R,G,B ) );
+				mWindow->setClearColor( Color( R,G,B ) );
 				Con.pushText( "setbackcolor applied" );
 				return;
 			}
@@ -1580,7 +1602,7 @@ void App::cmdLoadImg( const std::vector < String >& params ) {
 	if ( params.size() >= 2 ) {
 		std::string myPath = params[1].toUtf8();
 
-		if ( isImage( myPath ) || IsHttpUrl( myPath ) ) {
+		if ( isImage( myPath ) || isHttpUrl( myPath ) ) {
 			loadDir( myPath );
 		} else
 			Con.pushText( "\"" + myPath + "\" is not an image path or the image is not supported." );
@@ -1644,7 +1666,9 @@ void App::printHelp() {
 			HT += "Key E: Play SlideShow\n";
 			HT += "Key D: Pause/Disable SlideShow\n";
 			HT += "Key K: Reload the image switching the mipmap state ( with or without mipmaps )\n";
+			HT += "Key L: Lock zoom and image position when switching images\n";
 			HT += "Key Left - Right - Top - Down or left mouse press: Move the image\n";
+			HT += "Key F5: Reload the image\n";
 			HT += "Key F12: Take a screenshot\n";
 			HT += "Key HOME: Go to the first screenshot on the folder\n";
 			HT += "Key END: Go to the last screenshot on the folder";

@@ -131,6 +131,7 @@ class App {
 		Vector2i mMouseMiddleStartClick, mMouseMiddleClick;
 
 		EE_RENDER_MODE mImgRT;
+		EE_TEX_FILTER mFilter;
 
 		Int32 mLastWheelUse;
 		bool mShowHelp;
@@ -164,6 +165,7 @@ class App {
 		std::string mStorePath;
 		std::string mTmpPath;
 		bool mUsedTempDir;
+		bool mLockZoomAndPosition;
 
 		Clock TE;
 
