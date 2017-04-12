@@ -23,7 +23,6 @@ static std::string getWindowsPath() {
 	#endif
 }
 #undef RGB
-#undef CreateWindow
 #endif
 
 #include "capp.hpp"
@@ -1588,7 +1587,7 @@ void App::cmdSetBackColor( const std::vector < String >& params ) {
 			bool Res3 = String::fromString<Int32>( B, params[3] );
 
 			if ( Res1 && Res2 && Res3 && ( R <= 255 && R >= 0 ) && ( G <= 255 && G >= 0 ) && ( B <= 255 && B >= 0 ) ) {
-				mWindow->setClearColor( Color( R,G,B ) );
+				mWindow->setClearColor( RGB( R,G,B ) );
 				Con.pushText( "setbackcolor applied" );
 				return;
 			}
