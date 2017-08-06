@@ -39,6 +39,7 @@ class App {
 		void clearTempDir();
 		void videoResize();
 		void restoreMouse();
+		void setWindowCaption();
 		void batchImgScale(const std::string& Path, const Float& Scale , const bool & overridePath);
 		void scaleImg(const std::string& Path, const Float& Scale, const bool & overridePath, EE_SAVE_TYPE saveType = SAVE_TYPE_UNKNOWN );
 		void resizeImg(const std::string& Path, const std::string & outputPath, const Uint32& NewWidth, const Uint32& NewHeight, EE_SAVE_TYPE saveType = SAVE_TYPE_UNKNOWN );
