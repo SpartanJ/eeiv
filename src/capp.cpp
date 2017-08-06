@@ -244,7 +244,8 @@ bool App::init() {
 		Con.addCommand( "slideshow", cb::Make1( this, &App::cmdSlideShow ) );
 		Con.addCommand( "setzoom", cb::Make1( this, &App::cmdSetZoom ) );
 
-		prepareFrame();
+		setWindowCaption();
+
 		getImages();
 
 		if ( mFile != "" ) {
@@ -469,6 +470,8 @@ void App::setImage( const Uint32& Tex, const std::string& path ) {
 	} else {
 		FonCache.setString( "File: " + String::fromUtf8( path ) + " failed to load. \nReason: " + Image::getLastFailureReason() );
 	}
+
+	setWindowCaption();
 }
 
 Uint32 App::loadImage( const std::string& path, const bool& SetAsCurrent ) {
@@ -917,21 +920,21 @@ void App::zoomImage() {
 	}
 }
 
+void App::setWindowCaption() {
+	if ( mFiles.size() )
+		mInfo = "EEiv - " +  mFiles[ mCurImg ].Path;
+	else
+		mInfo = "EEiv";
+
+	if ( mInfo != mWindow->getCaption() )
+		mWindow->setCaption( mInfo );
+}
+
 void App::prepareFrame() {
 	Width = mWindow->getWidth();
 	Height = mWindow->getHeight();
 	HWidth = Width * 0.5f;
 	HHeight = Height * 0.5f;
-
-	if (Sys::getTicks() - mLastTicks >= 100) {
-		mLastTicks = Sys::getTicks();
-		if ( mFiles.size() )
-			mInfo = "EEiv - " +  mFiles[ mCurImg ].Path;
-		else
-			mInfo = "EEiv";
-
-		mWindow->setCaption( mInfo );
-	}
 }
 
 void App::render() {
@@ -1115,7 +1118,7 @@ void App::centerCropImg( const std::string& Path, const Uint32& Width, const Uin
 		img.resize( nSize.getWidth(), nSize.getHeight() );
 
 		Image * croppedImg  = NULL;
-		Recti rect;
+		Rect rect;
 
 		if ( img.getWidth() > Width ) {
 			rect.Left = ( img.getWidth() - Width ) / 2;
