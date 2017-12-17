@@ -64,8 +64,8 @@ App::App( int argc, char *argv[] ) :
 	mCursor(true),
 	mMouseLeftPressing(false),
 	mMouseMiddlePressing(false),
-	mImgRT(RN_NORMAL),
-	mFilter(TEX_FILTER_LINEAR),
+	mImgRT(RENDER_NORMAL),
+	mFilter(Texture::TextureFilter::TEXTURE_FILTER_LINEAR),
 	mShowHelp(false),
 	mFirstLoad(false),
 	mUsedTempDir(false),
@@ -435,7 +435,7 @@ void App::setImage( const Uint32& Tex, const std::string& path ) {
 	if ( Tex ) {
 		mFiles[ mCurImg ].Tex = Tex;
 
-		mImgRT = RN_NORMAL;
+		mImgRT = RENDER_NORMAL;
 
 		Vector2f scale( mImg.getScale() );
 		mImg.createStatic( Tex );
@@ -775,27 +775,27 @@ void App::input() {
 		}
 
 		if ( KM->isKeyUp(KEY_X) ) {
-			if ( mImgRT == RN_NORMAL )
-				mImgRT = RN_FLIP;
-			else if ( mImgRT == RN_MIRROR )
-				mImgRT = RN_FLIPMIRROR;
-			else if ( mImgRT == RN_FLIPMIRROR )
-				mImgRT = RN_MIRROR;
+			if ( mImgRT == RENDER_NORMAL )
+				mImgRT = RENDER_FLIPPED;
+			else if ( mImgRT == RENDER_MIRROR )
+				mImgRT = RENDER_FLIPPED_MIRRORED;
+			else if ( mImgRT == RENDER_FLIPPED_MIRRORED )
+				mImgRT = RENDER_MIRROR;
 			else
-				mImgRT = RN_NORMAL;
+				mImgRT = RENDER_NORMAL;
 
 			mImg.setRenderMode( mImgRT );
 		}
 
 		if ( KM->isKeyUp(KEY_C) ) {
-			if ( mImgRT == RN_NORMAL )
-				mImgRT = RN_MIRROR;
-			else if ( mImgRT == RN_FLIP )
-				mImgRT = RN_FLIPMIRROR;
-			else if ( mImgRT == RN_FLIPMIRROR )
-				mImgRT = RN_FLIP;
+			if ( mImgRT == RENDER_NORMAL )
+				mImgRT = RENDER_MIRROR;
+			else if ( mImgRT == RENDER_FLIPPED )
+				mImgRT = RENDER_FLIPPED_MIRRORED;
+			else if ( mImgRT == RENDER_FLIPPED_MIRRORED )
+				mImgRT = RENDER_FLIPPED;
 			else
-				mImgRT = RN_NORMAL;
+				mImgRT = RENDER_NORMAL;
 
 			mImg.setRenderMode( mImgRT );
 		}
@@ -806,7 +806,7 @@ void App::input() {
 		}
 
 		if ( KM->isKeyUp(KEY_A) ) {
-			mFilter = mFilter == TEX_FILTER_LINEAR ? TEX_FILTER_NEAREST : TEX_FILTER_LINEAR;
+			mFilter = mFilter == Texture::TextureFilter::TEXTURE_FILTER_LINEAR ? Texture::TextureFilter::TEXTURE_FILTER_NEAREST : Texture::TextureFilter::TEXTURE_FILTER_LINEAR;
 
 			Texture * Tex = mImg.getCurrentSubTexture()->getTexture();
 
@@ -1028,21 +1028,21 @@ void App::end() {
 	Engine::destroySingleton();
 }
 
-std::string App::createSavePath( const std::string & oriPath, Uint32 width, Uint32 height, EE_SAVE_TYPE saveType ) {
-	EE_SAVE_TYPE type = saveType == SAVE_TYPE_UNKNOWN ? Image::extensionToSaveType( FileSystem::fileExtension( oriPath ) ) : saveType;
+std::string App::createSavePath( const std::string & oriPath, Uint32 width, Uint32 height, Image::SaveType saveType ) {
+	Image::SaveType type = saveType == Image::SaveType::SAVE_TYPE_UNKNOWN ? Image::extensionToSaveType( FileSystem::fileExtension( oriPath ) ) : saveType;
 
-	if ( SAVE_TYPE_UNKNOWN == type ) {
-		type = SAVE_TYPE_PNG;
+	if ( Image::SaveType::SAVE_TYPE_UNKNOWN == type ) {
+		type = Image::SaveType::SAVE_TYPE_PNG;
 	}
 
 	return FileSystem::fileRemoveExtension( oriPath ) + "-" + String::toStr( width ) + "x" + String::toStr( height ) + "." + Image::saveTypeToExtension( type );
 }
 
-EE_SAVE_TYPE App::getPathSaveType( const std::string& path ) {
+Image::SaveType App::getPathSaveType( const std::string& path ) {
 	return Image::extensionToSaveType( FileSystem::fileExtension( path ) );
 }
 
-void App::scaleImg( const std::string& Path, const Float& Scale, const bool& overridePath, EE_SAVE_TYPE saveType ) {
+void App::scaleImg( const std::string& Path, const Float& Scale, const bool& overridePath, Image::SaveType saveType ) {
 	int w, h, c;
 
 	if ( Image::getInfo( Path, &w, &h, &c ) && Scale > 0.f ) {
@@ -1061,9 +1061,9 @@ void App::scaleImg( const std::string& Path, const Float& Scale, const bool& ove
 	}
 }
 
-void App::resizeImg( const std::string& Path, const std::string& outputPath, const Uint32& NewWidth, const Uint32& NewHeight, EE_SAVE_TYPE saveType ) {
+void App::resizeImg( const std::string& Path, const std::string& outputPath, const Uint32& NewWidth, const Uint32& NewHeight, Image::SaveType saveType ) {
 	if ( isImage( Path ) ) {
-		EE_SAVE_TYPE type = SAVE_TYPE_UNKNOWN != saveType ? saveType : getPathSaveType( outputPath );
+		Image::SaveType type = Image::SaveType::SAVE_TYPE_UNKNOWN != saveType ? saveType : getPathSaveType( outputPath );
 
 		Image img( Path );
 
@@ -1075,7 +1075,7 @@ void App::resizeImg( const std::string& Path, const std::string& outputPath, con
 	}
 }
 
-void App::thumgnailImg( const std::string& Path, const Uint32& MaxWidth, const Uint32& MaxHeight, EE_SAVE_TYPE saveType ) {
+void App::thumgnailImg( const std::string& Path, const Uint32& MaxWidth, const Uint32& MaxHeight, Image::SaveType saveType ) {
 	if ( isImage( Path ) ) {
 		Image img( Path );
 
@@ -1083,7 +1083,7 @@ void App::thumgnailImg( const std::string& Path, const Uint32& MaxWidth, const U
 
 		if ( NULL != thumb ) {
 			std::string newPath( createSavePath( Path, thumb->getWidth(), thumb->getHeight(), saveType ) );
-			EE_SAVE_TYPE type = SAVE_TYPE_UNKNOWN != saveType ? saveType : getPathSaveType( newPath );
+			Image::SaveType type = Image::SaveType::SAVE_TYPE_UNKNOWN != saveType ? saveType : getPathSaveType( newPath );
 
 			thumb->saveToFile( newPath, type );
 
@@ -1094,7 +1094,7 @@ void App::thumgnailImg( const std::string& Path, const Uint32& MaxWidth, const U
 	}
 }
 
-void App::centerCropImg( const std::string& Path, const Uint32& Width, const Uint32& Height, EE_SAVE_TYPE saveType ) {
+void App::centerCropImg( const std::string& Path, const Uint32& Width, const Uint32& Height, Image::SaveType saveType ) {
 	if ( isImage( Path ) ) {
 		Image img( Path );
 
@@ -1136,14 +1136,14 @@ void App::centerCropImg( const std::string& Path, const Uint32& Width, const Uin
 
 		if ( NULL != croppedImg ) {
 			std::string newPath( createSavePath( Path, croppedImg->getWidth(), croppedImg->getHeight(), saveType ) );
-			EE_SAVE_TYPE type = SAVE_TYPE_UNKNOWN != saveType ? saveType : getPathSaveType( newPath );
+			Image::SaveType type = Image::SaveType::SAVE_TYPE_UNKNOWN != saveType ? saveType : getPathSaveType( newPath );
 
 			croppedImg->saveToFile( newPath, type );
 
 			eeSAFE_DELETE( croppedImg );
 		} else {
 			std::string newPath( createSavePath( Path, img.getWidth(), img.getHeight(), saveType ) );
-			EE_SAVE_TYPE type = SAVE_TYPE_UNKNOWN != saveType ? saveType : getPathSaveType( newPath );
+			Image::SaveType type = Image::SaveType::SAVE_TYPE_UNKNOWN != saveType ? saveType : getPathSaveType( newPath );
 
 			img.saveToFile( newPath, type );
 		}
@@ -1228,7 +1228,7 @@ void App::cmdImgResize( const std::vector < String >& params ) {
 	if ( params.size() >= 3 ) {
 		Uint32 nWidth = 0;
 		Uint32 nHeight = 0;
-		EE_SAVE_TYPE saveType = SAVE_TYPE_UNKNOWN;
+		Image::SaveType saveType = Image::SaveType::SAVE_TYPE_UNKNOWN;
 		Uint32 override = 0;
 
 		bool Res1 = String::fromString<Uint32> ( nWidth, params[1] );
@@ -1267,7 +1267,7 @@ void App::cmdImgThumbnail( const std::vector < String >& params ) {
 	if ( params.size() >= 3 ) {
 		Uint32 nWidth = 0;
 		Uint32 nHeight = 0;
-		EE_SAVE_TYPE saveType = SAVE_TYPE_UNKNOWN;
+		Image::SaveType saveType = Image::SaveType::SAVE_TYPE_UNKNOWN;
 
 		bool Res1 = String::fromString<Uint32> ( nWidth, params[1] );
 		bool Res2 = String::fromString<Uint32> ( nHeight, params[2] );
@@ -1299,7 +1299,7 @@ void App::cmdImgCenterCrop( const std::vector < String >& params ) {
 	if ( params.size() >= 3 ) {
 		Uint32 nWidth = 0;
 		Uint32 nHeight = 0;
-		EE_SAVE_TYPE saveType = SAVE_TYPE_UNKNOWN;
+		Image::SaveType saveType = Image::SaveType::SAVE_TYPE_UNKNOWN;
 
 		bool Res1 = String::fromString<Uint32> ( nWidth, params[1] );
 		bool Res2 = String::fromString<Uint32> ( nHeight, params[2] );
@@ -1329,7 +1329,7 @@ void App::cmdImgScale( const std::vector < String >& params ) {
 	String Error( "Usage example: imgscale scale path_to_img format override_path" );
 	if ( params.size() >= 2 ) {
 		Float Scale = 0;
-		EE_SAVE_TYPE saveType = SAVE_TYPE_UNKNOWN;
+		Image::SaveType saveType = Image::SaveType::SAVE_TYPE_UNKNOWN;
 		Uint32 override = 0;
 
 		bool Res = String::fromString<Float>( Scale, params[1] );
@@ -1443,9 +1443,9 @@ void App::cmdImgChangeFormat( const std::vector < String >& params ) {
 				else
 					fName = fPath + "." + toFormat;
 
-				EE_SAVE_TYPE saveType = Image::extensionToSaveType( toFormat );
+				Image::SaveType saveType = Image::extensionToSaveType( toFormat );
 
-				if ( SAVE_TYPE_UNKNOWN != saveType ) {
+				if ( Image::SaveType::SAVE_TYPE_UNKNOWN != saveType ) {
 					Image * img = eeNew( Image, ( fPath ) );
 					img->saveToFile( fName, saveType );
 					eeSAFE_DELETE( img );
@@ -1487,9 +1487,9 @@ void App::cmdBatchImgChangeFormat( const std::vector < String >& params ) {
 					else
 						fName = fPath + "." + toFormat;
 
-					EE_SAVE_TYPE saveType = Image::extensionToSaveType( toFormat );
+					Image::SaveType saveType = Image::extensionToSaveType( toFormat );
 
-					if ( SAVE_TYPE_UNKNOWN != saveType ) {
+					if ( Image::SaveType::SAVE_TYPE_UNKNOWN != saveType ) {
 						Image * img = eeNew( Image, ( fPath ) );
 						img->saveToFile( fPath, saveType );
 						eeSAFE_DELETE( img );
