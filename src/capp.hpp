@@ -41,10 +41,10 @@ class App {
 		void restoreMouse();
 		void setWindowCaption();
 		void batchImgScale(const std::string& Path, const Float& Scale , const bool & overridePath);
-		void scaleImg(const std::string& Path, const Float& Scale, const bool & overridePath, EE_SAVE_TYPE saveType = SAVE_TYPE_UNKNOWN );
-		void resizeImg(const std::string& Path, const std::string & outputPath, const Uint32& NewWidth, const Uint32& NewHeight, EE_SAVE_TYPE saveType = SAVE_TYPE_UNKNOWN );
-		void thumgnailImg( const std::string& Path, const Uint32& MaxWidth, const Uint32& MaxHeight, EE_SAVE_TYPE saveType = SAVE_TYPE_UNKNOWN );
-		void centerCropImg( const std::string& Path, const Uint32& Width, const Uint32& Height, EE_SAVE_TYPE saveType = SAVE_TYPE_UNKNOWN );
+		void scaleImg(const std::string& Path, const Float& Scale, const bool & overridePath, Image::SaveType saveType = Image::SaveType::SAVE_TYPE_UNKNOWN );
+		void resizeImg(const std::string& Path, const std::string & outputPath, const Uint32& NewWidth, const Uint32& NewHeight, Image::SaveType saveType = Image::SaveType::SAVE_TYPE_UNKNOWN );
+		void thumgnailImg( const std::string& Path, const Uint32& MaxWidth, const Uint32& MaxHeight, Image::SaveType saveType = Image::SaveType::SAVE_TYPE_UNKNOWN );
+		void centerCropImg( const std::string& Path, const Uint32& Width, const Uint32& Height, Image::SaveType saveType = Image::SaveType::SAVE_TYPE_UNKNOWN );
 		void switchFade();
 		void doSlideShow();
 		void createSlideShow( Uint32 time );
@@ -69,9 +69,9 @@ class App {
 		void cmdSlideShow( const std::vector < String >& params );
 		void cmdSetZoom( const std::vector < String >& params );
 
-		std::string createSavePath( const std::string& oriPath, Uint32 width, Uint32 height , EE_SAVE_TYPE saveType = SAVE_TYPE_UNKNOWN );
+		std::string createSavePath( const std::string& oriPath, Uint32 width, Uint32 height , Image::SaveType saveType = Image::SaveType::SAVE_TYPE_UNKNOWN );
 
-		EE_SAVE_TYPE getPathSaveType( const std::string& path );
+		Image::SaveType getPathSaveType( const std::string& path );
 
 		Engine * EE;
 		TextureFactory * TF;
@@ -131,8 +131,8 @@ class App {
 		bool mMouseMiddlePressing;
 		Vector2i mMouseMiddleStartClick, mMouseMiddleClick;
 
-		EE_RENDER_MODE mImgRT;
-		EE_TEX_FILTER mFilter;
+		RenderMode mImgRT;
+		Texture::TextureFilter mFilter;
 
 		Int32 mLastWheelUse;
 		bool mShowHelp;
