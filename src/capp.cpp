@@ -595,10 +595,7 @@ void App::input() {
 	}
 
 	if ( ( KM->isAltPressed() && KM->isKeyUp(KEY_RETURN) ) || ( KM->isKeyUp(KEY_F) && !Con.isActive() ) ) {
-		if ( mWindow->isWindowed() )
-			mWindow->setSize( mWindow->getDesktopResolution().getWidth(), mWindow->getDesktopResolution().getHeight(), false );
-		else
-			mWindow->toggleFullscreen();
+		mWindow->toggleFullscreen();
 
 		prepareFrame();
 		scaleToScreen();
