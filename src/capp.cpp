@@ -98,7 +98,7 @@ void App::getConfig() {
 	mConfig.BitColor = Ini.getValueI( "Window", "BitColor", 32 );
 	mConfig.Windowed = Ini.getValueB( "Window", "Windowed", true );
 	mConfig.Resizeable = Ini.getValueB( "Window", "Resizeable", true );
-	mConfig.VSync = Ini.getValueI( "Window", "VSync", true );
+	mConfig.VSync = Ini.getValueB( "Window", "VSync", true );
 	mConfig.DoubleBuffering = Ini.getValueB( "Window", "DoubleBuffering", true );
 	mConfig.UseDesktopResolution = Ini.getValueB( "Window", "UseDesktopResolution", false );
 	mConfig.NoFrame = Ini.getValueB( "Window", "Borderless", false );
@@ -1536,7 +1536,7 @@ void App::cmdSetBlockWheel( const std::vector < String >& params ) {
 		bool Res = String::fromString<Int32>( tInt, params[1] );
 
 		if ( Res && ( tInt == 0 || tInt == 1 ) ) {
-			mConfig.BlockWheelSpeed = (bool)tInt;
+			mConfig.BlockWheelSpeed = tInt ? true : false;
 			Con.pushText( "setblockwheel " + String::toStr(tInt) );
 		} else
 			Con.pushText( "Valid parameters are 0 or 1." );
@@ -1551,7 +1551,7 @@ void App::cmdSetLateLoading( const std::vector < String >& params ) {
 		bool Res = String::fromString<Int32>( tInt, params[1] );
 
 		if ( Res && ( tInt == 0 || tInt == 1 ) ) {
-			mConfig.LateLoading = (bool)tInt;
+			mConfig.LateLoading = tInt ? true : false;
 			Con.pushText( "setlateloading " + String::toStr(tInt) );
 		} else
 			Con.pushText( "Valid parameters are 0 or 1." );
@@ -1566,7 +1566,7 @@ void App::cmdSetImgFade( const std::vector < String >& params ) {
 		bool Res = String::fromString<Int32>( tInt, params[1] );
 
 		if ( Res && ( tInt == 0 || tInt == 1 ) ) {
-			mConfig.Fade = (bool)tInt;
+			mConfig.Fade = tInt ? true : false;
 			Con.pushText( "setimgfade " + String::toStr(tInt) );
 		} else
 			Con.pushText( "Valid parameters are 0 or 1." );
