@@ -75,8 +75,8 @@ App::App( int argc, char *argv[] ) :
 	mSlideTime(4000),
 	mSlideTicks(Sys::getTicks())
 {
-	mStorePath	= Sys::getConfigPath( "eeiv" ) + FileSystem::getOSlash();
-	mTmpPath	= mStorePath + "tmp" + FileSystem::getOSlash();
+	mStorePath	= Sys::getConfigPath( "eeiv" ) + FileSystem::getOSSlash();
+	mTmpPath	= mStorePath + "tmp" + FileSystem::getOSSlash();
 
 	std::string nstr;
 
@@ -185,7 +185,7 @@ bool App::init() {
 
 		Clock TE;
 
-		std::string MyFontPath = MyPath + "assets/fonts" + FileSystem::getOSlash();
+		std::string MyFontPath = MyPath + "assets/fonts" + FileSystem::getOSSlash();
 
 		TTF 	= FontTrueType::New( "DejaVuSans" );
 		TTFMon 	= FontTrueType::New( "DejaVuSansMono" );
@@ -309,8 +309,8 @@ void App::loadDir( const std::string& path, const bool& getimages ) {
 	if ( !FileSystem::isDirectory( path ) ) {
 		if ( path.substr(0,7) == "file://" ) {
 			mFilePath = path.substr( 7 );
-			mFilePath = mFilePath.substr( 0, mFilePath.find_last_of( FileSystem::getOSlash() ) );
-			tmpFile = path.substr( path.find_last_of( FileSystem::getOSlash() ) + 1 );
+			mFilePath = mFilePath.substr( 0, mFilePath.find_last_of( FileSystem::getOSSlash() ) );
+			tmpFile = path.substr( path.find_last_of( FileSystem::getOSSlash() ) + 1 );
 		} else if ( isHttpUrl( path ) ) {
 			mUsedTempDir = true;
 
@@ -337,8 +337,8 @@ void App::loadDir( const std::string& path, const bool& getimages ) {
 			mFilePath = mTmpPath;
 			tmpFile = "tmpfile";
 		} else {
-			mFilePath = path.substr( 0, path.find_last_of( FileSystem::getOSlash() ) );
-			tmpFile = path.substr( path.find_last_of( FileSystem::getOSlash() ) + 1 );
+			mFilePath = path.substr( 0, path.find_last_of( FileSystem::getOSSlash() ) );
+			tmpFile = path.substr( path.find_last_of( FileSystem::getOSSlash() ) + 1 );
 		}
 
 		String::replaceAll( mFilePath, "%20", " " );
@@ -347,7 +347,7 @@ void App::loadDir( const std::string& path, const bool& getimages ) {
 			#if EE_PLATFORM == EE_PLATFORM_WIN
 				mFilePath = "C:\\";
 			#else
-				mFilePath = FileSystem::getOSlash();
+				mFilePath = FileSystem::getOSSlash();
 			#endif
 		}
 
