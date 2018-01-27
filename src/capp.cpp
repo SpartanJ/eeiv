@@ -65,7 +65,7 @@ App::App( int argc, char *argv[] ) :
 	mMouseLeftPressing(false),
 	mMouseMiddlePressing(false),
 	mImgRT(RENDER_NORMAL),
-	mFilter(Texture::TextureFilter::TEXTURE_FILTER_LINEAR),
+	mFilter(Texture::TextureFilter::Linear),
 	mShowHelp(false),
 	mFirstLoad(false),
 	mUsedTempDir(false),
@@ -803,9 +803,9 @@ void App::input() {
 		}
 
 		if ( KM->isKeyUp(KEY_A) ) {
-			mFilter = mFilter == Texture::TextureFilter::TEXTURE_FILTER_LINEAR ? Texture::TextureFilter::TEXTURE_FILTER_NEAREST : Texture::TextureFilter::TEXTURE_FILTER_LINEAR;
+			mFilter = mFilter == Texture::TextureFilter::Linear ? Texture::TextureFilter::Nearest : Texture::TextureFilter::Linear;
 
-			Texture * Tex = mImg.getCurrentSubTexture()->getTexture();
+			Texture * Tex = mImg.getCurrentTextureRegion()->getTexture();
 
 			if ( Tex ) {
 				Tex->setFilter( mFilter );
@@ -841,7 +841,7 @@ void App::input() {
 		if ( KM->isKeyUp(KEY_K) ) {
 			Texture * curTex;
 
-			if ( NULL != mImg.getCurrentSubTexture() && NULL != ( curTex = mImg.getCurrentSubTexture()->getTexture() ) ) {
+			if ( NULL != mImg.getCurrentTextureRegion() && NULL != ( curTex = mImg.getCurrentTextureRegion()->getTexture() ) ) {
 				curTex->setMipmap( !curTex->getMipmap() );
 				curTex->reload();
 			}
@@ -854,7 +854,7 @@ void App::input() {
 		if ( KM->isKeyUp(KEY_F5) ) {
 			Texture * curTex;
 
-			if ( NULL != mImg.getCurrentSubTexture() && NULL != ( curTex = mImg.getCurrentSubTexture()->getTexture() ) ) {
+			if ( NULL != mImg.getCurrentTextureRegion() && NULL != ( curTex = mImg.getCurrentTextureRegion()->getTexture() ) ) {
 				Image img ( curTex->getFilepath() );
 				curTex->replace( &img );
 			}
@@ -942,7 +942,7 @@ void App::render() {
 	if ( mFiles.size() && mFiles[ mCurImg ].Tex ) {
 		doFade();
 
-		Texture * Tex = mImg.getCurrentSubTexture()->getTexture();
+		Texture * Tex = mImg.getCurrentTextureRegion()->getTexture();
 
 		if ( Tex ) {
 			Float X = static_cast<Float> ( static_cast<Int32> ( HWidth - mImg.getSize().getWidth() * 0.5f ) );
@@ -984,7 +984,7 @@ void App::doFade() {
 
 		Texture * Tex = NULL;
 
-		if ( NULL != mOldImg.getCurrentSubTexture() && ( Tex = mOldImg.getCurrentSubTexture()->getTexture() ) ) {
+		if ( NULL != mOldImg.getCurrentTextureRegion() && ( Tex = mOldImg.getCurrentTextureRegion()->getTexture() ) ) {
 			Float X = static_cast<Float> ( static_cast<Int32> ( HWidth - mOldImg.getSize().getWidth() * 0.5f ) );
 			Float Y = static_cast<Float> ( static_cast<Int32> ( HHeight - mOldImg.getSize().getHeight() * 0.5f ) );
 
