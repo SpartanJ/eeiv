@@ -173,6 +173,12 @@ bool App::init() {
 	mWindow = EE->createWindow( WinSettings, ConSettings );
 
 	if ( mWindow->isOpen() ) {
+		Display * currentDisplay = Engine::instance()->getDisplayManager()->getDisplayIndex( mWindow->getCurrentDisplayIndex() );
+
+		PixelDensity::setPixelDensity( PixelDensity::toFloat( currentDisplay->getPixelDensity() ) );
+
+		formatConfiguration.svgScale( PixelDensity::getPixelDensity() );
+
 		if ( mConfig.FrameLimit )
 			mWindow->setFrameRateLimit(60);
 
@@ -477,7 +483,7 @@ void App::setImage( const Uint32& Tex, const std::string& path ) {
 Uint32 App::loadImage( const std::string& path, const bool& SetAsCurrent ) {
 	Uint32 TexId 		= 0;
 
-	TexId = TF->loadFromFile( mFilePath + path );
+	TexId = TF->loadFromFile( mFilePath + path, false, Texture::ClampToEdge, false, false, formatConfiguration );
 
 	if ( SetAsCurrent )
 		setImage( TexId, path );

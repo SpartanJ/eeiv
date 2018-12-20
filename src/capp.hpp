@@ -177,6 +177,8 @@ class App {
 		Uint32	mSlideTicks;
 
 		IniFile Ini;
+
+		Image::FormatConfiguration formatConfiguration;
 };
 
 #endif
