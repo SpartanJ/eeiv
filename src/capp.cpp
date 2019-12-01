@@ -1,4 +1,5 @@
 #include <eepp/config.hpp>
+#include <eepp/core/string.hpp>
 
 // This application is not meant to be used as an example of beautiful code,
 // it's just old code that works fine and looks ugly. It was made exclusively
@@ -15,7 +16,7 @@ static std::string getWindowsPath() {
 	#ifdef UNICODE
 		wchar_t Buffer[1024];
 		GetWindowsDirectory( Buffer, 1024 );
-		return String( Buffer ).toUtf8();
+		return EE::String( Buffer ).toUtf8();
 	#else
 		char Buffer[1024];
 		GetWindowsDirectory( Buffer, 1024 );
