@@ -1,15 +1,15 @@
 #include "capp.hpp"
 
 EE_MAIN_FUNC int main(int argc, char *argv[]) {
-	cApp * MyApp = eeNew( cApp, ( argc, argv ) );
+	App * MyApp = eeNew( App, ( argc, argv ) );
 
-	MyApp->Process();
+	MyApp->process();
 
 	eeDelete( MyApp );
 
-	Engine::DestroySingleton();
+	Engine::destroySingleton();
 
-	EE::MemoryManager::ShowResults();
+	EE::MemoryManager::showResults();
 
 	return 0;
 }
