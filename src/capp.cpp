@@ -29,21 +29,27 @@ static std::string getWindowsPath() {
 #include "capp.hpp"
 #include <algorithm>
 
-static bool isImage( const std::string& path ) {
-	std::string mPath = path;
+static bool isRawImage( const std::string& path ) {
+	std::string Ext = FileSystem::fileExtension(path);
+	return Ext == "uint8" || Ext == "float32";
+}
+
+static bool isImage( const std::string& _path ) {
+	std::string path = _path;
 
 	if ( path.size() >= 7 && path.substr(0,7) == "file://" )
-		mPath = path.substr( 7 );
+		path = path.substr( 7 );
 
-	if ( !FileSystem::isDirectory(mPath) && FileSystem::fileSize( mPath ) ) {
-		std::string File = mPath.substr( mPath.find_last_of("/\\") + 1 );
-		std::string Ext = File.substr( File.find_last_of(".") + 1 );
-		String::toLowerInPlace( Ext );
-
-		if ( Ext == "png" || Ext == "tga" || Ext == "bmp" || Ext == "jpg" || Ext == "gif" || Ext == "jpeg" || Ext == "dds" || Ext == "psd" || Ext == "hdr" || Ext == "pic" || Ext == "pvr" || Ext == "pkm" )
+	if ( !FileSystem::isDirectory(path) && FileSystem::fileSize(path) ) {
+		std::string Ext = FileSystem::fileExtension(path);
+		if ( Ext == "png" || Ext == "tga" || Ext == "bmp" || Ext == "jpg" || Ext == "gif" || Ext == "jpeg" ||
+			 Ext == "dds" || Ext == "psd" || Ext == "hdr" || Ext == "pic" || Ext == "pvr" || Ext == "pkm" ) {
 			return true;
-		else {
-			return Image::isImage( mPath );
+		} else {
+			if ( Ext == "uint8" || Ext == "float32" ) {
+				return true;
+			}
+			return Image::isImage( path );
 		}
 	}
 
@@ -481,12 +487,64 @@ void App::setImage( const Uint32& Tex, const std::string& path ) {
 	setWindowCaption();
 }
 
-Uint32 App::loadImage( const std::string& path, const bool& SetAsCurrent ) {
+Sizei imageSizeFromName(const std::string& path) {
+	Sizei size(Sizei::Zero);
+	size_t xPos = std::string::npos;
+	for (size_t i = 0; i < path.size(); i++) {
+		if (i > 0 && i < path.size()-1 && path[i] == 'x' && String::isNumber(path[i-1]) && String::isNumber(path[i+1])) {
+			xPos = i;
+			break;
+		}
+	}
+	if (xPos != std::string::npos) {
+		std::string width;
+		std::string height;
+		for (size_t i = xPos - 1; i >= 0; i--) {
+			if (String::isNumber(path[i])) {
+				width = path[i] + width;
+			} else {
+				break;
+			}
+		}
+		for (size_t i = xPos + 1; i < path.size(); i++) {
+			if (String::isNumber(path[i])) {
+				height += path[i];
+			} else {
+				break;
+			}
+		}
+		int w;
+		int h;
+		if (String::fromString<int>(w, width) &&
+			String::fromString<int>(h, height)) {
+			return Sizei(w, h);
+		}
+	}
+	return size;
+}
+
+Uint32 App::loadImage( const std::string& path, const bool& setAsCurrent ) {
 	Uint32 TexId 		= 0;
 
-	TexId = TF->loadFromFile( mFilePath + path, false, Texture::ClampToEdge, false, false, formatConfiguration );
+	if (isRawImage(mFilePath + path)) {
+		ScopedBuffer buffer;
+		if (FileSystem::fileGet(mFilePath + path, buffer)) {
+			Sizei size(imageSizeFromName(path));
+			int channels = 0;
+			for (size_t c = 1; c <= 4; c++) {
+				if (buffer.size()-8 == size.getWidth()*size.getHeight()*c) {
+					channels = c;
+					break;
+				}
+			}
+			if (channels > 0)
+				TexId = TF->loadFromPixels( buffer.get()+8, size.getWidth(), size.getHeight(), channels );
+		}
+	} else {
+		TexId = TF->loadFromFile( mFilePath + path, false, Texture::ClampToEdge, false, false, formatConfiguration );
+	}
 
-	if ( SetAsCurrent )
+	if ( setAsCurrent )
 		setImage( TexId, path );
 
 	return TexId;
@@ -1585,19 +1643,11 @@ void App::cmdSetBackColor( const std::vector < String >& params ) {
 	String Error( "Usage example: setbackcolor 255 255 255 (RGB Color, numbers between 0 and 255)" );
 
 	if ( params.size() >= 2 ) {
-		if ( params.size() == 4 ) {
-			Int32 R = 0;
-			bool Res1 = String::fromString<Int32>( R, params[1] );
-			Int32 G = 0;
-			bool Res2 = String::fromString<Int32>( G, params[2] );
-			Int32 B = 0;
-			bool Res3 = String::fromString<Int32>( B, params[3] );
+		if ( params.size() >= 2 ) {
+			mWindow->setClearColor( Color::fromString( params[1].toUtf8() ).toRGB() );
+			Con.pushText( "setbackcolor applied" );
+			return;
 
-			if ( Res1 && Res2 && Res3 && ( R <= 255 && R >= 0 ) && ( G <= 255 && G >= 0 ) && ( B <= 255 && B >= 0 ) ) {
-				mWindow->setClearColor( RGB( R,G,B ) );
-				Con.pushText( "setbackcolor applied" );
-				return;
-			}
 		}
 
 		Con.pushText( Error );

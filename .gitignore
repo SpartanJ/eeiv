@@ -2,4 +2,4 @@ syntax: glob
 obj/**
 make/**
 eeiv-debug
-eeiv-release
+eeiv
