@@ -1,7 +1,7 @@
 eeiv
 ====
 
-**eeiv* is a _very_ simple image viewer that uses the [eepp](https://github.com/SpartanJ/eepp)
+**eeiv** is a _very_ simple image viewer that uses the [eepp](https://github.com/SpartanJ/eepp)
 library to decode and show the images on screen. It was implemented a long time
 ago for my own needs. It does not represent at all the capabilities of eepp, so
 please don't take it as an example.
