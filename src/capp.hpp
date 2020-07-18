@@ -132,7 +132,7 @@ class App {
 		Vector2i mMouseMiddleStartClick, mMouseMiddleClick;
 
 		RenderMode mImgRT;
-		Texture::TextureFilter mFilter;
+		Texture::Filter mFilter;
 
 		Int32 mLastWheelUse;
 		bool mShowHelp;
