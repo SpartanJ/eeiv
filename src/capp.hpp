@@ -12,6 +12,7 @@ class App {
 		void process();
 		void loadDir( const std::string& path, const bool& getimages = true );
 	private:
+		void updateConfig();
 		bool init();
 		void input();
 		void render();
@@ -87,7 +88,7 @@ class App {
 
 		FontTrueType * TTF, * TTFMon;
 
-		Console Con; //! Console Instance
+		UIConsole* Con; //! Console Instance
 
 		Vector2i Mouse; //! Mouse Position on Screen
 		double ET;	//! Elapsed Time Between Frames

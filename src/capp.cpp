@@ -191,6 +191,11 @@ bool App::init() {
 		if ( mConfig.FrameLimit )
 			mWindow->setFrameRateLimit( 60 );
 
+		mWindow->setCloseRequestCallback( [&]( EE::Window::Window* win ) -> bool {
+			updateConfig();
+			return true;
+		} );
+
 		TF = TextureFactory::instance();
 		Log = Log::instance();
 		KM = mWindow->getInput();
@@ -240,27 +245,32 @@ bool App::init() {
 		if ( !Fon && !Mon )
 			return false;
 
-		Con.create( Mon, true, true, 1024000 );
-		Con.ignoreCharOnPrompt( 186 );
-		Con.setCharacterSize( mConfig.ConsoleFontSize );
+		UISceneNode* uiSceneNode = UISceneNode::New();
+		uiSceneNode->getUIThemeManager()->setDefaultFont( Fon );
+		SceneManager::instance()->add( uiSceneNode );
 
-		Con.addCommand( "loaddir", cb::Make1( this, &App::cmdLoadDir ) );
-		Con.addCommand( "loadimg", cb::Make1( this, &App::cmdLoadImg ) );
-		Con.addCommand( "setbackcolor", cb::Make1( this, &App::cmdSetBackColor ) );
-		Con.addCommand( "setimgfade", cb::Make1( this, &App::cmdSetImgFade ) );
-		Con.addCommand( "setlateloading", cb::Make1( this, &App::cmdSetLateLoading ) );
-		Con.addCommand( "setblockwheel", cb::Make1( this, &App::cmdSetBlockWheel ) );
-		Con.addCommand( "moveto", cb::Make1( this, &App::cmdMoveTo ) );
-		Con.addCommand( "batchimgscale", cb::Make1( this, &App::cmdBatchImgScale ) );
-		Con.addCommand( "batchimgchangeformat", cb::Make1( this, &App::cmdBatchImgChangeFormat ) );
-		Con.addCommand( "batchimgthumbnail", cb::Make1( this, &App::cmdBatchImgThumbnail ) );
-		Con.addCommand( "imgchangeformat", cb::Make1( this, &App::cmdImgChangeFormat ) );
-		Con.addCommand( "imgresize", cb::Make1( this, &App::cmdImgResize ) );
-		Con.addCommand( "imgscale", cb::Make1( this, &App::cmdImgScale ) );
-		Con.addCommand( "imgthumbnail", cb::Make1( this, &App::cmdImgThumbnail ) );
-		Con.addCommand( "imgcentercrop", cb::Make1( this, &App::cmdImgCenterCrop ) );
-		Con.addCommand( "slideshow", cb::Make1( this, &App::cmdSlideShow ) );
-		Con.addCommand( "setzoom", cb::Make1( this, &App::cmdSetZoom ) );
+		Con = UIConsole::NewOpt( Mon, true, true, 1024000 );
+		Con->setQuakeMode( true );
+		Con->setVisible( false );
+		Con->setFontSize( mConfig.ConsoleFontSize );
+
+		Con->addCommand( "loaddir", cb::Make1( this, &App::cmdLoadDir ) );
+		Con->addCommand( "loadimg", cb::Make1( this, &App::cmdLoadImg ) );
+		Con->addCommand( "setbackcolor", cb::Make1( this, &App::cmdSetBackColor ) );
+		Con->addCommand( "setimgfade", cb::Make1( this, &App::cmdSetImgFade ) );
+		Con->addCommand( "setlateloading", cb::Make1( this, &App::cmdSetLateLoading ) );
+		Con->addCommand( "setblockwheel", cb::Make1( this, &App::cmdSetBlockWheel ) );
+		Con->addCommand( "moveto", cb::Make1( this, &App::cmdMoveTo ) );
+		Con->addCommand( "batchimgscale", cb::Make1( this, &App::cmdBatchImgScale ) );
+		Con->addCommand( "batchimgchangeformat", cb::Make1( this, &App::cmdBatchImgChangeFormat ) );
+		Con->addCommand( "batchimgthumbnail", cb::Make1( this, &App::cmdBatchImgThumbnail ) );
+		Con->addCommand( "imgchangeformat", cb::Make1( this, &App::cmdImgChangeFormat ) );
+		Con->addCommand( "imgresize", cb::Make1( this, &App::cmdImgResize ) );
+		Con->addCommand( "imgscale", cb::Make1( this, &App::cmdImgScale ) );
+		Con->addCommand( "imgthumbnail", cb::Make1( this, &App::cmdImgThumbnail ) );
+		Con->addCommand( "imgcentercrop", cb::Make1( this, &App::cmdImgCenterCrop ) );
+		Con->addCommand( "slideshow", cb::Make1( this, &App::cmdSlideShow ) );
+		Con->addCommand( "setzoom", cb::Make1( this, &App::cmdSetZoom ) );
 
 		setWindowCaption();
 
@@ -274,7 +284,7 @@ bool App::init() {
 		}
 
 		if ( 0 == mFiles.size() && 0 == mFile.length() ) {
-			Con.toggle();
+			Con->toggle();
 		}
 
 		return true;
@@ -346,12 +356,12 @@ void App::loadDir( const std::string& path, const bool& getimages ) {
 						 mTmpPath + "tmpfile",
 						 reinterpret_cast<const Uint8*>( &response.getBody()[0] ),
 						 response.getBody().size() ) ) {
-					Con.pushText( "Couldn't write the downloaded image to disk." );
+					Con->pushText( "Couldn't write the downloaded image to disk." );
 
 					return;
 				}
 			} else {
-				Con.pushText( "Couldn't download the image from network." );
+				Con->pushText( "Couldn't download the image from network." );
 
 				return;
 			}
@@ -399,6 +409,12 @@ void App::loadDir( const std::string& path, const bool& getimages ) {
 	}
 }
 
+void App::updateConfig() {
+	mConfig.Width = EE->getCurrentWindow()->getWidth();
+	mConfig.Height = EE->getCurrentWindow()->getHeight();
+	mConfig.MaximizeAtStart = EE->getCurrentWindow()->isMaximized();
+}
+
 void App::clearTempDir() {
 	if ( mUsedTempDir ) {
 		getImages();
@@ -432,11 +448,11 @@ void App::getImages() {
 		mFiles.push_back( tmpI );
 	}
 
-	Con.pushText( "Image list loaded in %f ms.", TE.getElapsed().asMilliseconds() );
+	Con->pushText( "Image list loaded in %f ms.", TE.getElapsed().asMilliseconds() );
 
-	Con.pushText( "Directory: \"" + String::fromUtf8( mFilePath ) + "\"" );
+	Con->pushText( "Directory: \"" + String::fromUtf8( mFilePath ) + "\"" );
 	for ( Uint32 i = 0; i < mFiles.size(); i++ )
-		Con.pushText( "	" + String::fromUtf8( mFiles[i].Path ) );
+		Con->pushText( "	" + String::fromUtf8( mFiles[i].Path ) );
 }
 
 Uint32 App::curImagePos( const std::string& path ) {
@@ -623,7 +639,7 @@ void App::loadFirstImage() {
 }
 
 void App::loadLastImage() {
-	if ( mCurImg != ( Int32 )( mFiles.size() - 1 ) )
+	if ( mCurImg != (Int32)( mFiles.size() - 1 ) )
 		fastLoadImage( mFiles.size() - 1 );
 }
 
@@ -663,12 +679,13 @@ void App::input() {
 		mWindow->minimize();
 	}
 
-	if ( KM->isKeyDown( KEY_ESCAPE ) || ( KM->isKeyDown( KEY_Q ) && !Con.isActive() ) ) {
+	if ( KM->isKeyDown( KEY_ESCAPE ) || ( KM->isKeyDown( KEY_Q ) && !Con->isActive() ) ) {
+		updateConfig();
 		mWindow->close();
 	}
 
 	if ( ( KM->isAltPressed() && KM->isKeyUp( KEY_RETURN ) ) ||
-		 ( KM->isKeyUp( KEY_F ) && !Con.isActive() ) ) {
+		 ( KM->isKeyUp( KEY_F ) && !Con->isActive() ) ) {
 		mWindow->toggleFullscreen();
 
 		prepareFrame();
@@ -680,21 +697,21 @@ void App::input() {
 	}
 
 	if ( KM->isKeyUp( KEY_F3 ) ) {
-		Con.toggle();
+		Con->toggle();
 	}
 
-	if ( ( KM->isKeyUp( KEY_S ) && !Con.isActive() ) || KM->isKeyUp( KEY_F4 ) ) {
+	if ( ( KM->isKeyUp( KEY_S ) && !Con->isActive() ) || KM->isKeyUp( KEY_F4 ) ) {
 		mCursor = !mCursor;
 		mWindow->getCursorManager()->setVisible( mCursor );
 	}
 
-	if ( KM->isKeyUp( KEY_H ) && !Con.isActive() ) {
+	if ( KM->isKeyUp( KEY_H ) && !Con->isActive() ) {
 		mShowHelp = !mShowHelp;
 	}
 
 	if ( ( ( KM->isKeyUp( KEY_V ) && KM->isControlPressed() ) ||
 		   ( KM->isKeyUp( KEY_INSERT ) && KM->isShiftPressed() ) ) &&
-		 !Con.isActive() ) {
+		 !Con->isActive() ) {
 		std::string tPath = mWindow->getClipboard()->getText();
 
 		if ( ( tPath.size() && isImage( tPath ) ) || FileSystem::isDirectory( tPath ) ) {
@@ -702,7 +719,7 @@ void App::input() {
 		}
 	}
 
-	if ( !Con.isActive() ) {
+	if ( !Con->isActive() ) {
 		if ( KM->mouseWheelScrolledUp() || KM->isKeyUp( KEY_PAGEUP ) ) {
 			if ( !mConfig.BlockWheelSpeed ||
 				 Sys::getTicks() - mLastWheelUse > mConfig.WheelBlockTime ) {
@@ -726,7 +743,7 @@ void App::input() {
 		}
 	}
 
-	if ( mFiles.size() && mFiles[mCurImg].Tex && !Con.isActive() ) {
+	if ( mFiles.size() && mFiles[mCurImg].Tex && !Con->isActive() ) {
 		if ( KM->isKeyUp( KEY_HOME ) ) {
 			loadFirstImage();
 			disableSlideShow();
@@ -774,16 +791,16 @@ void App::input() {
 
 		if ( KM->isKeyDown( KEY_LEFT ) ) {
 			Vector2f nPos(
-				( Float )( ( Int32 )( mImg.getPosition().x +
-									  ( ( mWindow->getElapsed().asMilliseconds() * 0.4f ) ) ) ),
+				(Float)( (Int32)( mImg.getPosition().x +
+								  ( ( mWindow->getElapsed().asMilliseconds() * 0.4f ) ) ) ),
 				mImg.getPosition().y );
 			mImg.setPosition( nPos );
 		}
 
 		if ( KM->isKeyDown( KEY_RIGHT ) ) {
 			Vector2f nPos(
-				( Float )( ( Int32 )( mImg.getPosition().x +
-									  ( -( mWindow->getElapsed().asMilliseconds() * 0.4f ) ) ) ),
+				(Float)( (Int32)( mImg.getPosition().x +
+								  ( -( mWindow->getElapsed().asMilliseconds() * 0.4f ) ) ) ),
 				mImg.getPosition().y );
 			mImg.setPosition( nPos );
 		}
@@ -791,16 +808,16 @@ void App::input() {
 		if ( KM->isKeyDown( KEY_UP ) ) {
 			Vector2f nPos(
 				mImg.getPosition().x,
-				( Float )( ( Int32 )( mImg.getPosition().y +
-									  ( ( mWindow->getElapsed().asMilliseconds() * 0.4f ) ) ) ) );
+				(Float)( (Int32)( mImg.getPosition().y +
+								  ( ( mWindow->getElapsed().asMilliseconds() * 0.4f ) ) ) ) );
 			mImg.setPosition( nPos );
 		}
 
 		if ( KM->isKeyDown( KEY_DOWN ) ) {
 			Vector2f nPos(
 				mImg.getPosition().x,
-				( Float )( ( Int32 )( mImg.getPosition().y +
-									  ( -( mWindow->getElapsed().asMilliseconds() * 0.4f ) ) ) ) );
+				(Float)( (Int32)( mImg.getPosition().y +
+								  ( -( mWindow->getElapsed().asMilliseconds() * 0.4f ) ) ) ) );
 			mImg.setPosition( nPos );
 		}
 
@@ -977,7 +994,7 @@ void App::doSlideShow() {
 		if ( Sys::getTicks() - mSlideTicks >= mSlideTime ) {
 			mSlideTicks = Sys::getTicks();
 
-			if ( ( Uint32 )( mCurImg + 1 ) < mFiles.size() ) {
+			if ( (Uint32)( mCurImg + 1 ) < mFiles.size() ) {
 				loadNextImage();
 			} else {
 				disableSlideShow();
@@ -1059,7 +1076,8 @@ void App::render() {
 
 	printHelp();
 
-	Con.draw();
+	SceneManager::instance()->update();
+	SceneManager::instance()->draw();
 }
 
 void App::createFade() {
@@ -1099,10 +1117,6 @@ void App::doFade() {
 }
 
 void App::end() {
-	mConfig.Width = EE->getCurrentWindow()->getWidth();
-	mConfig.Height = EE->getCurrentWindow()->getHeight();
-	mConfig.MaximizeAtStart = EE->getCurrentWindow()->isMaximized();
-
 	Ini.setValueI( "Window", "Width", mConfig.Width );
 	Ini.setValueI( "Window", "Height", mConfig.Height );
 	Ini.setValueI( "Window", "BitColor", mConfig.BitColor );
@@ -1161,7 +1175,7 @@ void App::scaleImg( const std::string& Path, const Float& Scale, const bool& ove
 
 		resizeImg( Path, outputPath, new_width, new_height, saveType );
 	} else {
-		Con.pushText( "Images does not exists." );
+		Con->pushText( "Images does not exists." );
 	}
 }
 
@@ -1178,7 +1192,7 @@ void App::resizeImg( const std::string& Path, const std::string& outputPath, con
 
 		img.saveToFile( outputPath, type );
 	} else {
-		Con.pushText( "Images does not exists." );
+		Con->pushText( "Images does not exists." );
 	}
 }
 
@@ -1201,7 +1215,7 @@ void App::thumgnailImg( const std::string& Path, const Uint32& MaxWidth, const U
 			eeSAFE_DELETE( thumb );
 		}
 	} else {
-		Con.pushText( "Images does not exists." );
+		Con->pushText( "Images does not exists." );
 	}
 }
 
@@ -1307,13 +1321,14 @@ void App::batchImgThumbnail( Sizei size, std::string dir, bool recursive ) {
 						thumb->saveToFile( fpath, Image::extensionToSaveType(
 													  FileSystem::fileExtension( fpath ) ) );
 
-						Con.pushText( "Thumbnail created for '%s'. Old size %dx%d. New size %dx%d.",
-									  fpath.c_str(), img.getWidth(), img.getHeight(),
-									  thumb->getWidth(), thumb->getHeight() );
+						Con->pushText(
+							"Thumbnail created for '%s'. Old size %dx%d. New size %dx%d.",
+							fpath.c_str(), img.getWidth(), img.getHeight(), thumb->getWidth(),
+							thumb->getHeight() );
 
 						eeSAFE_DELETE( thumb );
 					} else {
-						Con.pushText( "Thumbnail %s failed to create.", fpath.c_str() );
+						Con->pushText( "Thumbnail %s failed to create.", fpath.c_str() );
 					}
 				}
 			}
@@ -1338,10 +1353,10 @@ void App::cmdSlideShow( const std::vector<String>& params ) {
 				}
 			}
 		} else {
-			Con.pushText( Error );
+			Con->pushText( Error );
 		}
 	} else {
-		Con.pushText( Error );
+		Con->pushText( Error );
 	}
 }
 
@@ -1379,10 +1394,10 @@ void App::cmdImgResize( const std::vector<String>& params ) {
 
 			resizeImg( myPath, savePath, nWidth, nHeight, saveType );
 		} else {
-			Con.pushText( Error );
+			Con->pushText( Error );
 		}
 	} else {
-		Con.pushText( Error );
+		Con->pushText( Error );
 	}
 }
 
@@ -1411,10 +1426,10 @@ void App::cmdImgThumbnail( const std::vector<String>& params ) {
 		if ( Res1 && Res2 ) {
 			thumgnailImg( myPath, nWidth, nHeight, saveType );
 		} else {
-			Con.pushText( Error );
+			Con->pushText( Error );
 		}
 	} else {
-		Con.pushText( Error );
+		Con->pushText( Error );
 	}
 }
 
@@ -1443,9 +1458,9 @@ void App::cmdImgCenterCrop( const std::vector<String>& params ) {
 		if ( Res1 && Res2 )
 			centerCropImg( myPath, nWidth, nHeight, saveType );
 		else
-			Con.pushText( Error );
+			Con->pushText( Error );
 	} else {
-		Con.pushText( Error );
+		Con->pushText( Error );
 	}
 }
 
@@ -1477,9 +1492,9 @@ void App::cmdImgScale( const std::vector<String>& params ) {
 		if ( Res )
 			scaleImg( myPath, Scale, 0 != override, saveType );
 		else
-			Con.pushText( Error );
+			Con->pushText( Error );
 	} else {
-		Con.pushText( Error );
+		Con->pushText( Error );
 	}
 }
 
@@ -1501,13 +1516,13 @@ void App::cmdBatchImgScale( const std::vector<String>& params ) {
 			if ( FileSystem::isDirectory( myPath ) ) {
 				batchImgScale( myPath, Scale, 0 != override );
 			} else {
-				Con.pushText( "Second argument is not a directory!" );
+				Con->pushText( "Second argument is not a directory!" );
 			}
 		} else {
-			Con.pushText( Error );
+			Con->pushText( Error );
 		}
 	} else {
-		Con.pushText( Error );
+		Con->pushText( Error );
 	}
 }
 
@@ -1533,13 +1548,13 @@ void App::cmdBatchImgThumbnail( const std::vector<String>& params ) {
 			if ( FileSystem::isDirectory( myPath ) ) {
 				batchImgThumbnail( Sizei( max_width, max_height ), myPath, recursive );
 			} else {
-				Con.pushText( "Third argument is not a directory!" );
+				Con->pushText( "Third argument is not a directory!" );
 			}
 		} else {
-			Con.pushText( Error );
+			Con->pushText( Error );
 		}
 	} else {
-		Con.pushText( Error );
+		Con->pushText( Error );
 	}
 }
 
@@ -1577,14 +1592,14 @@ void App::cmdImgChangeFormat( const std::vector<String>& params ) {
 					img->saveToFile( fName, saveType );
 					eeSAFE_DELETE( img );
 
-					Con.pushText( fName + " created." );
+					Con->pushText( fName + " created." );
 				}
 			}
 		} else {
-			Con.pushText( "Third argument is not a directory! Argument: " + myPath );
+			Con->pushText( "Third argument is not a directory! Argument: " + myPath );
 		}
 	} else {
-		Con.pushText( Error );
+		Con->pushText( Error );
 	}
 }
 
@@ -1622,15 +1637,15 @@ void App::cmdBatchImgChangeFormat( const std::vector<String>& params ) {
 						img->saveToFile( fPath, saveType );
 						eeSAFE_DELETE( img );
 
-						Con.pushText( fName + " created." );
+						Con->pushText( fName + " created." );
 					}
 				}
 			}
 		} else {
-			Con.pushText( "Third argument is not a directory! Argument: " + myPath );
+			Con->pushText( "Third argument is not a directory! Argument: " + myPath );
 		}
 	} else {
-		Con.pushText( Error );
+		Con->pushText( Error );
 	}
 }
 
@@ -1644,19 +1659,19 @@ void App::cmdMoveTo( const std::vector<String>& params ) {
 			tInt--;
 
 		if ( Res && tInt >= 0 && tInt < (Int32)mFiles.size() ) {
-			Con.pushText( "moveto: moving to image number " + String::toString( tInt + 1 ) );
+			Con->pushText( "moveto: moving to image number " + String::toString( tInt + 1 ) );
 			fastLoadImage( tInt );
 		} else if ( params[1] == "last" ) {
-			Con.pushText( "moveto: moving to last" );
+			Con->pushText( "moveto: moving to last" );
 			fastLoadImage( mFiles.size() - 1 );
 		} else if ( params[1] == "first" ) {
-			Con.pushText( "moveto: moving to first" );
+			Con->pushText( "moveto: moving to first" );
 			fastLoadImage( 0 );
 		} else {
-			Con.pushText( "moveto: image number does not exists" );
+			Con->pushText( "moveto: image number does not exists" );
 		}
 	} else {
-		Con.pushText( "Expected some parameter" );
+		Con->pushText( "Expected some parameter" );
 	}
 }
 
@@ -1668,11 +1683,11 @@ void App::cmdSetBlockWheel( const std::vector<String>& params ) {
 
 		if ( Res && ( tInt == 0 || tInt == 1 ) ) {
 			mConfig.BlockWheelSpeed = tInt ? true : false;
-			Con.pushText( "setblockwheel " + String::toString( tInt ) );
+			Con->pushText( "setblockwheel " + String::toString( tInt ) );
 		} else
-			Con.pushText( "Valid parameters are 0 or 1." );
+			Con->pushText( "Valid parameters are 0 or 1." );
 	} else
-		Con.pushText( "Expected some parameter" );
+		Con->pushText( "Expected some parameter" );
 }
 
 void App::cmdSetLateLoading( const std::vector<String>& params ) {
@@ -1683,11 +1698,11 @@ void App::cmdSetLateLoading( const std::vector<String>& params ) {
 
 		if ( Res && ( tInt == 0 || tInt == 1 ) ) {
 			mConfig.LateLoading = tInt ? true : false;
-			Con.pushText( "setlateloading " + String::toString( tInt ) );
+			Con->pushText( "setlateloading " + String::toString( tInt ) );
 		} else
-			Con.pushText( "Valid parameters are 0 or 1." );
+			Con->pushText( "Valid parameters are 0 or 1." );
 	} else
-		Con.pushText( "Expected some parameter" );
+		Con->pushText( "Expected some parameter" );
 }
 
 void App::cmdSetImgFade( const std::vector<String>& params ) {
@@ -1698,11 +1713,11 @@ void App::cmdSetImgFade( const std::vector<String>& params ) {
 
 		if ( Res && ( tInt == 0 || tInt == 1 ) ) {
 			mConfig.Fade = tInt ? true : false;
-			Con.pushText( "setimgfade " + String::toString( tInt ) );
+			Con->pushText( "setimgfade " + String::toString( tInt ) );
 		} else
-			Con.pushText( "Valid parameters are 0 or 1." );
+			Con->pushText( "Valid parameters are 0 or 1." );
 	} else
-		Con.pushText( "Expected some parameter" );
+		Con->pushText( "Expected some parameter" );
 }
 
 void App::cmdSetBackColor( const std::vector<String>& params ) {
@@ -1712,11 +1727,11 @@ void App::cmdSetBackColor( const std::vector<String>& params ) {
 	if ( params.size() >= 2 ) {
 		if ( params.size() >= 2 ) {
 			mWindow->setClearColor( Color::fromString( params[1].toUtf8() ).toRGB() );
-			Con.pushText( "setbackcolor applied" );
+			Con->pushText( "setbackcolor applied" );
 			return;
 		}
 
-		Con.pushText( Error );
+		Con->pushText( Error );
 	}
 }
 
@@ -1727,8 +1742,8 @@ void App::cmdLoadImg( const std::vector<String>& params ) {
 		if ( isImage( myPath ) || isHttpUrl( myPath ) ) {
 			loadDir( myPath );
 		} else
-			Con.pushText( "\"" + myPath +
-						  "\" is not an image path or the image is not supported." );
+			Con->pushText( "\"" + myPath +
+						   "\" is not an image path or the image is not supported." );
 	}
 }
 
@@ -1743,8 +1758,8 @@ void App::cmdLoadDir( const std::vector<String>& params ) {
 		if ( FileSystem::isDirectory( myPath ) ) {
 			loadDir( myPath );
 		} else
-			Con.pushText( "If you want to load an image use loadimg. \"" + myPath +
-						  "\" is not a directory path." );
+			Con->pushText( "If you want to load an image use loadimg. \"" + myPath +
+						   "\" is not a directory path." );
 	}
 }
 
@@ -1755,12 +1770,12 @@ void App::cmdSetZoom( const std::vector<String>& params ) {
 		bool Res = String::fromString<Float>( tFloat, params[1] );
 
 		if ( Res && tFloat >= 0 && tFloat <= 10 ) {
-			Con.pushText( "setzoom: zoom level " + String::toString( tFloat ) );
+			Con->pushText( "setzoom: zoom level " + String::toString( tFloat ) );
 			mImg.setScale( tFloat );
 		} else
-			Con.pushText( "setzoom: value out of range" );
+			Con->pushText( "setzoom: value out of range" );
 	} else
-		Con.pushText( "Expected some parameter" );
+		Con->pushText( "Expected some parameter" );
 }
 
 void App::printHelp() {
