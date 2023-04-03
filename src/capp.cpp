@@ -240,7 +240,8 @@ bool App::init() {
 		FonCache.setFontSize( mConfig.AppFontSize );
 		FonCache.setOutlineThickness( PixelDensity::dpToPxI( 1 ) );
 
-		Log::instance()->writef( "Fonts loading time: %f ms", TE.getElapsed().asMilliseconds() );
+		Log::instance()->writef( "Fonts loading time: %f ms",
+								 TE.getElapsedTimeAndReset().asMilliseconds() );
 
 		if ( !Fon && !Mon )
 			return false;
@@ -313,7 +314,7 @@ void App::process() {
 				Sys::sleep( 16 );
 			}
 
-			RET = TEP.getElapsed().asMilliseconds();
+			RET = TEP.getElapsedTimeAndReset().asMilliseconds();
 
 			if ( mConfig.LateLoading && mLaterLoad ) {
 				if ( Sys::getTicks() - mLastLaterTick > mConfig.TransitionTime ) {
@@ -448,7 +449,7 @@ void App::getImages() {
 		mFiles.push_back( tmpI );
 	}
 
-	Con->pushText( "Image list loaded in %f ms.", TE.getElapsed().asMilliseconds() );
+	Con->pushText( "Image list loaded in %f ms.", TE.getElapsedTimeAndReset().asMilliseconds() );
 
 	Con->pushText( "Directory: \"" + String::fromUtf8( mFilePath ) + "\"" );
 	for ( Uint32 i = 0; i < mFiles.size(); i++ )
@@ -562,13 +563,18 @@ Uint32 App::loadImage( const std::string& path, const bool& setAsCurrent ) {
 					break;
 				}
 			}
-			if ( channels > 0 )
-				TexId = TF->loadFromPixels( buffer.get() + 8, size.getWidth(), size.getHeight(),
-											channels );
+			if ( channels > 0 ) {
+				Texture* tex = TF->loadFromPixels( buffer.get() + 8, size.getWidth(),
+												   size.getHeight(), channels );
+				if ( tex )
+					TexId = tex->getTextureId();
+			}
 		}
 	} else {
-		TexId = TF->loadFromFile( mFilePath + path, false, Texture::ClampMode::ClampToEdge, false,
-								  false, formatConfiguration );
+		Texture* tex = TF->loadFromFile( mFilePath + path, false, Texture::ClampMode::ClampToEdge,
+										 false, false, formatConfiguration );
+		if ( tex )
+			TexId = tex->getTextureId();
 	}
 
 	if ( setAsCurrent )
@@ -692,7 +698,7 @@ void App::input() {
 		scaleToScreen();
 	}
 
-	if ( KM->isKeyUp( KEY_F5 ) ) {
+	if ( KM->isKeyUp( KEY_F6 ) ) {
 		switchFade();
 	}
 
@@ -969,7 +975,7 @@ void App::input() {
 
 			if ( NULL != mImg.getCurrentTextureRegion() &&
 				 NULL != ( curTex = mImg.getCurrentTextureRegion()->getTexture() ) ) {
-				Image img( curTex->getFilepath() );
+				Image img( curTex->getFilepath(), 0, formatConfiguration );
 				curTex->replace( &img );
 			}
 		}
@@ -1809,6 +1815,7 @@ void App::printHelp() {
 			HT += "Key L: Lock zoom and image position when switching images\n";
 			HT += "Key Left - Right - Top - Down or left mouse press: Move the image\n";
 			HT += "Key F5: Reload the image\n";
+			HT += "Key F6: Switch fade\n";
 			HT += "Key F12: Take a screenshot\n";
 			HT += "Key HOME: Go to the first screenshot on the folder\n";
 			HT += "Key END: Go to the last screenshot on the folder";
