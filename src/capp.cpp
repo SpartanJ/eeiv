@@ -101,26 +101,26 @@ App::~App() {
 }
 
 void App::getConfig() {
-	mConfig.Width = Ini.getValueI( "Window", "Width", 1024 );
-	mConfig.Height = Ini.getValueI( "Window", "Height", 768 );
-	mConfig.BitColor = Ini.getValueI( "Window", "BitColor", 32 );
-	mConfig.Windowed = Ini.getValueB( "Window", "Windowed", true );
-	mConfig.Resizeable = Ini.getValueB( "Window", "Resizeable", true );
-	mConfig.VSync = Ini.getValueB( "Window", "VSync", true );
-	mConfig.DoubleBuffering = Ini.getValueB( "Window", "DoubleBuffering", true );
-	mConfig.UseDesktopResolution = Ini.getValueB( "Window", "UseDesktopResolution", false );
-	mConfig.NoFrame = Ini.getValueB( "Window", "Borderless", false );
-	mConfig.MaximizeAtStart = Ini.getValueB( "Window", "MaximizeAtStart", true );
-	mConfig.FrameLimit = Ini.getValueI( "Window", "FrameLimit", 0 );
-	mConfig.Fade = Ini.getValueB( "Viewer", "Fade", true );
-	mConfig.LateLoading = Ini.getValueB( "Viewer", "LateLoading", true );
-	mConfig.BlockWheelSpeed = Ini.getValueB( "Viewer", "BlockWheelSpeed", true );
-	mConfig.ShowInfo = Ini.getValueB( "Viewer", "ShowInfo", true );
-	mConfig.TransitionTime = Ini.getValueI( "Viewer", "TransitionTime", 200 );
-	mConfig.ConsoleFontSize = Ini.getValueI( "Viewer", "ConsoleFontSize", 12 );
-	mConfig.AppFontSize = Ini.getValueI( "Viewer", "AppFontSize", 12 );
-	mConfig.DefaultImageZoom = Ini.getValueF( "Viewer", "DefaultImageZoom", 1 );
-	mConfig.WheelBlockTime = Ini.getValueI( "Viewer", "WheelBlockTime", 200 );
+	mConfig.Width = Ini.getValueI( "window", "width", 1024 );
+	mConfig.Height = Ini.getValueI( "window", "height", 768 );
+	mConfig.BitColor = Ini.getValueI( "window", "bitcolor", 32 );
+	mConfig.Windowed = Ini.getValueB( "window", "windowed", true );
+	mConfig.Resizeable = Ini.getValueB( "window", "resizeable", true );
+	mConfig.VSync = Ini.getValueB( "window", "vsync", true );
+	mConfig.DoubleBuffering = Ini.getValueB( "window", "doublebuffering", true );
+	mConfig.UseDesktopResolution = Ini.getValueB( "window", "usedesktopresolution", false );
+	mConfig.NoFrame = Ini.getValueB( "window", "borderless", false );
+	mConfig.MaximizeAtStart = Ini.getValueB( "window", "maximizeatstart", true );
+	mConfig.FrameLimit = Ini.getValueI( "window", "framelimit", 0 );
+	mConfig.Fade = Ini.getValueB( "viewer", "fade", true );
+	mConfig.LateLoading = Ini.getValueB( "viewer", "lateloading", true );
+	mConfig.BlockWheelSpeed = Ini.getValueB( "viewer", "blockwheelspeed", true );
+	mConfig.ShowInfo = Ini.getValueB( "viewer", "showinfo", true );
+	mConfig.TransitionTime = Ini.getValueI( "viewer", "transitiontime", 200 );
+	mConfig.ConsoleFontSize = Ini.getValueI( "viewer", "consolefontsize", 12 );
+	mConfig.AppFontSize = Ini.getValueI( "viewer", "appfontsize", 12 );
+	mConfig.DefaultImageZoom = Ini.getValueF( "viewer", "defaultimagezoom", 1 );
+	mConfig.WheelBlockTime = Ini.getValueI( "viewer", "wheelblocktime", 200 );
 }
 
 void App::loadConfig() {
@@ -131,26 +131,26 @@ void App::loadConfig() {
 		Ini.readFile();
 		getConfig();
 	} else {
-		Ini.setValueI( "Window", "Width", 1024 );
-		Ini.setValueI( "Window", "Height", 768 );
-		Ini.setValueI( "Window", "BitColor", 32 );
-		Ini.setValueI( "Window", "Windowed", 1 );
-		Ini.setValueI( "Window", "Resizeable", 1 );
-		Ini.setValueI( "Window", "VSync", 1 );
-		Ini.setValueI( "Window", "DoubleBuffering", 1 );
-		Ini.setValueI( "Window", "UseDesktopResolution", 0 );
-		Ini.setValueI( "Window", "Borderless", 0 );
-		Ini.setValueI( "Window", "MaximizeAtStart", 1 );
-		Ini.setValueI( "Window", "FrameLimit", 0 );
-		Ini.setValueI( "Viewer", "Fade", 1 );
-		Ini.setValueI( "Viewer", "LateLoading", 1 );
-		Ini.setValueI( "Viewer", "BlockWheelSpeed", 1 );
-		Ini.setValueI( "Viewer", "ShowInfo", 1 );
-		Ini.setValueI( "Viewer", "TransitionTime", 200 );
-		Ini.setValueI( "Viewer", "ConsoleFontSize", 12 );
-		Ini.setValueI( "Viewer", "AppFontSize", 12 );
-		Ini.setValueI( "Viewer", "DefaultImageZoom", 1 );
-		Ini.setValueI( "Viewer", "WheelBlockTime", 200 );
+		Ini.setValueI( "window", "width", 1024 );
+		Ini.setValueI( "window", "height", 768 );
+		Ini.setValueI( "window", "bitcolor", 32 );
+		Ini.setValueI( "window", "windowed", 1 );
+		Ini.setValueI( "window", "resizeable", 1 );
+		Ini.setValueI( "window", "vsync", 1 );
+		Ini.setValueI( "window", "doublebuffering", 1 );
+		Ini.setValueI( "window", "usedesktopresolution", 0 );
+		Ini.setValueI( "window", "borderless", 0 );
+		Ini.setValueI( "window", "maximizeatstart", 1 );
+		Ini.setValueI( "window", "framelimit", 0 );
+		Ini.setValueI( "viewer", "fade", 1 );
+		Ini.setValueI( "viewer", "lateloading", 1 );
+		Ini.setValueI( "viewer", "blockwheelspeed", 1 );
+		Ini.setValueI( "viewer", "showinfo", 1 );
+		Ini.setValueI( "viewer", "transitiontime", 200 );
+		Ini.setValueI( "viewer", "consolefontsize", 12 );
+		Ini.setValueI( "viewer", "appfontsize", 12 );
+		Ini.setValueI( "viewer", "defaultimagezoom", 1 );
+		Ini.setValueI( "viewer", "wheelblocktime", 200 );
 
 		if ( !FileSystem::isDirectory( mStorePath ) )
 			FileSystem::makeDir( mStorePath );
@@ -172,8 +172,8 @@ bool App::init() {
 		iconp = MyPath + "assets/icon/ee.png";
 	}
 
-	WindowSettings WinSettings = EE->createWindowSettings( &Ini, "Window" );
-	ContextSettings ConSettings = EE->createContextSettings( &Ini, "Window" );
+	WindowSettings WinSettings = EE->createWindowSettings( &Ini, "window" );
+	ContextSettings ConSettings = EE->createContextSettings( &Ini, "window" );
 
 	WinSettings.Icon = iconp;
 	WinSettings.Title = "eeiv";
@@ -1123,26 +1123,26 @@ void App::doFade() {
 }
 
 void App::end() {
-	Ini.setValueI( "Window", "Width", mConfig.Width );
-	Ini.setValueI( "Window", "Height", mConfig.Height );
-	Ini.setValueI( "Window", "BitColor", mConfig.BitColor );
-	Ini.setValueI( "Window", "Windowed", mConfig.Windowed );
-	Ini.setValueI( "Window", "Resizeable", mConfig.Resizeable );
-	Ini.setValueI( "Window", "VSync", mConfig.VSync );
-	Ini.setValueI( "Window", "DoubleBuffering", mConfig.DoubleBuffering );
-	Ini.setValueI( "Window", "UseDesktopResolution", mConfig.UseDesktopResolution );
-	Ini.setValueI( "Window", "NoFrame", mConfig.NoFrame );
-	Ini.setValueI( "Window", "MaximizeAtStart", mConfig.MaximizeAtStart );
-	Ini.setValueI( "Window", "FrameLimit", mConfig.FrameLimit );
-	Ini.setValueI( "Viewer", "Fade", mConfig.Fade );
-	Ini.setValueI( "Viewer", "LateLoading", mConfig.LateLoading );
-	Ini.setValueI( "Viewer", "BlockWheelSpeed", mConfig.BlockWheelSpeed );
-	Ini.setValueI( "Viewer", "ShowInfo", mConfig.ShowInfo );
-	Ini.setValueI( "Viewer", "TransitionTime", mConfig.TransitionTime );
-	Ini.setValueI( "Viewer", "ConsoleFontSize", mConfig.ConsoleFontSize );
-	Ini.setValueI( "Viewer", "AppFontSize", mConfig.AppFontSize );
-	Ini.setValueF( "Viewer", "DefaultImageZoom", mConfig.DefaultImageZoom );
-	Ini.setValueI( "Viewer", "WheelBlockTime", mConfig.WheelBlockTime );
+	Ini.setValueI( "window", "width", mConfig.Width );
+	Ini.setValueI( "window", "height", mConfig.Height );
+	Ini.setValueI( "window", "bitcolor", mConfig.BitColor );
+	Ini.setValueI( "window", "windowed", mConfig.Windowed );
+	Ini.setValueI( "window", "resizeable", mConfig.Resizeable );
+	Ini.setValueI( "window", "vsync", mConfig.VSync );
+	Ini.setValueI( "window", "doublebuffering", mConfig.DoubleBuffering );
+	Ini.setValueI( "window", "usedesktopresolution", mConfig.UseDesktopResolution );
+	Ini.setValueI( "window", "noframe", mConfig.NoFrame );
+	Ini.setValueI( "window", "maximizeatstart", mConfig.MaximizeAtStart );
+	Ini.setValueI( "window", "framelimit", mConfig.FrameLimit );
+	Ini.setValueI( "viewer", "fade", mConfig.Fade );
+	Ini.setValueI( "viewer", "lateloading", mConfig.LateLoading );
+	Ini.setValueI( "viewer", "blockwheelspeed", mConfig.BlockWheelSpeed );
+	Ini.setValueI( "viewer", "showinfo", mConfig.ShowInfo );
+	Ini.setValueI( "viewer", "transitiontime", mConfig.TransitionTime );
+	Ini.setValueI( "viewer", "consolefontsize", mConfig.ConsoleFontSize );
+	Ini.setValueI( "viewer", "appfontsize", mConfig.AppFontSize );
+	Ini.setValueF( "viewer", "defaultimagezoom", mConfig.DefaultImageZoom );
+	Ini.setValueI( "viewer", "wheelblocktime", mConfig.WheelBlockTime );
 
 	Ini.writeFile();
 	Engine::destroySingleton();
