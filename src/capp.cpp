@@ -1,6 +1,8 @@
 #include <eepp/config.hpp>
 #include <eepp/core/string.hpp>
 
+using namespace std::literals;
+
 // This application is not meant to be used as an example of beautiful code,
 // it's just old code that works fine and looks ugly. It was made exclusively
 // for my personal use, and still manages to satisfy my very basic image viewing necessities.
@@ -255,23 +257,23 @@ bool App::init() {
 		Con->setVisible( false );
 		Con->setFontSize( mConfig.ConsoleFontSize );
 
-		Con->addCommand( "loaddir", cb::Make1( this, &App::cmdLoadDir ) );
-		Con->addCommand( "loadimg", cb::Make1( this, &App::cmdLoadImg ) );
-		Con->addCommand( "setbackcolor", cb::Make1( this, &App::cmdSetBackColor ) );
-		Con->addCommand( "setimgfade", cb::Make1( this, &App::cmdSetImgFade ) );
-		Con->addCommand( "setlateloading", cb::Make1( this, &App::cmdSetLateLoading ) );
-		Con->addCommand( "setblockwheel", cb::Make1( this, &App::cmdSetBlockWheel ) );
-		Con->addCommand( "moveto", cb::Make1( this, &App::cmdMoveTo ) );
-		Con->addCommand( "batchimgscale", cb::Make1( this, &App::cmdBatchImgScale ) );
-		Con->addCommand( "batchimgchangeformat", cb::Make1( this, &App::cmdBatchImgChangeFormat ) );
-		Con->addCommand( "batchimgthumbnail", cb::Make1( this, &App::cmdBatchImgThumbnail ) );
-		Con->addCommand( "imgchangeformat", cb::Make1( this, &App::cmdImgChangeFormat ) );
-		Con->addCommand( "imgresize", cb::Make1( this, &App::cmdImgResize ) );
-		Con->addCommand( "imgscale", cb::Make1( this, &App::cmdImgScale ) );
-		Con->addCommand( "imgthumbnail", cb::Make1( this, &App::cmdImgThumbnail ) );
-		Con->addCommand( "imgcentercrop", cb::Make1( this, &App::cmdImgCenterCrop ) );
-		Con->addCommand( "slideshow", cb::Make1( this, &App::cmdSlideShow ) );
-		Con->addCommand( "setzoom", cb::Make1( this, &App::cmdSetZoom ) );
+		Con->addCommand( "loaddir", [this] ( auto event ) { cmdLoadDir( event ); } );
+		Con->addCommand( "loadimg", [this] ( auto event ) { cmdLoadImg( event ); } );
+		Con->addCommand( "setbackcolor", [this] ( auto event ) { cmdSetBackColor( event ); } );
+		Con->addCommand( "setimgfade", [this] ( auto event ) { cmdSetImgFade( event ); } );
+		Con->addCommand( "setlateloading", [this] ( auto event ) { cmdSetLateLoading( event ); } );
+		Con->addCommand( "setblockwheel", [this] ( auto event ) { cmdSetBlockWheel( event ); } );
+		Con->addCommand( "moveto", [this] ( auto event ) { cmdMoveTo( event ); } );
+		Con->addCommand( "batchimgscale", [this] ( auto event ) { cmdBatchImgScale( event ); } );
+		Con->addCommand( "batchimgchangeformat", [this] ( auto event ) { cmdBatchImgChangeFormat( event ); } );
+		Con->addCommand( "batchimgthumbnail", [this] ( auto event ) { cmdBatchImgThumbnail( event ); } );
+		Con->addCommand( "imgchangeformat", [this] ( auto event ) { cmdImgChangeFormat( event ); } );
+		Con->addCommand( "imgresize", [this] ( auto event ) { cmdImgResize( event ); } );
+		Con->addCommand( "imgscale", [this] ( auto event ) { cmdImgScale( event ); } );
+		Con->addCommand( "imgthumbnail", [this] ( auto event ) { cmdImgThumbnail( event ); } );
+		Con->addCommand( "imgcentercrop", [this] ( auto event ) { cmdImgCenterCrop( event ); } );
+		Con->addCommand( "slideshow", [this] ( auto event ) { cmdSlideShow( event ); } );
+		Con->addCommand( "setzoom", [this] ( auto event ) { cmdSetZoom( event ); } );
 
 		setWindowCaption();
 
@@ -311,7 +313,7 @@ void App::process() {
 
 				mWindow->display( true );
 			} else {
-				Sys::sleep( 16 );
+				Sys::sleep( Milliseconds( 16 ) );
 			}
 
 			RET = TEP.getElapsedTimeAndReset().asMilliseconds();
@@ -1793,7 +1795,7 @@ void App::printHelp() {
 			String HT = "Keys List:\n";
 			HT += "Escape: Quit from EEiv\n";
 			HT += "ALT + RETURN or F: Toogle Fullscreen - Windowed\n";
-			HT += String::fromUtf8( "F3 or º: Toggle Console\n" );
+			HT += String::fromUtf8( "F3 or º: Toggle Console\n"sv );
 			HT += "F4 or S: Show/Hide Cursor\n";
 			HT += "Mouse Wheel Up or PageUp: Go to Previous Image\n";
 			HT += "Mouse Wheel Down or PageDown: Go to Next Image\n";
