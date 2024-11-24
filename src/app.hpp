@@ -9,7 +9,8 @@ class App {
   public:
 	struct ImageData {
 		std::string Path;
-		Uint32 Tex;
+		std::vector<Uint32> Tex;
+		Float animFps{ 60 };
 	};
 
 	struct Config {
@@ -81,13 +82,13 @@ class App {
 	void scaleToScreen( const bool& force = false );
 	void getImages();
 	Uint32 curImagePos( const std::string& path );
-	Uint32 loadImage( const std::string& path, const bool& SetAsCurrent = false );
+	std::pair<std::vector<Uint32>, Float> loadImage( const std::string& path, const bool& SetAsCurrent = false );
 	void loadNextImage();
 	void loadPrevImage();
 	void zoomImage();
 	void unloadImage( const Uint32& img );
 	void updateImages();
-	void setImage( const Uint32& Tex, const std::string& path );
+	void setImage( const std::vector<Uint32>& Tex, const std::string& path, Float animFps = 60 );
 	void doFade();
 	void createFade();
 	void optUpdate();

@@ -30,7 +30,6 @@ static std::string getWindowsPath() {
 #endif
 
 #include "app.hpp"
-#include <algorithm>
 
 bool App::isRawImage( const std::string& path ) {
 	std::string Ext = FileSystem::fileExtension( path );
@@ -453,7 +452,7 @@ void App::getImages() {
 	for ( i = 0; i < tStr.size(); i++ ) {
 		ImageData tmpI;
 		tmpI.Path = tStr[i];
-		tmpI.Tex = 0;
+		tmpI.Tex.clear();
 
 		mFiles.push_back( tmpI );
 	}
@@ -475,18 +474,27 @@ Uint32 App::curImagePos( const std::string& path ) {
 
 void App::fastLoadImage( const Uint32& ImgNum ) {
 	mCurImg = ImgNum;
-	mFiles[mCurImg].Tex = loadImage( mFiles[mCurImg].Path, true );
+	auto res = loadImage( mFiles[mCurImg].Path, true );
+	mFiles[mCurImg].Tex = std::move( res.first );
+	mFiles[mCurImg].animFps = res.second;
 	mFirstLoad = true;
 }
 
-void App::setImage( const Uint32& Tex, const std::string& path ) {
-	if ( Tex ) {
+void App::setImage( const std::vector<Uint32>& Tex, const std::string& path, Float animFps ) {
+	if ( !Tex.empty() ) {
 		mFiles[mCurImg].Tex = Tex;
 
 		mImgRT = RENDER_NORMAL;
 
 		Vector2f scale( mImg.getScale() );
-		mImg.createStatic( Tex );
+		if ( Tex.size() == 1 ) {
+			mImg.createStatic( Tex[0] );
+		} else {
+			mImg.reset();
+			for ( Uint32 texId : Tex )
+				mImg.addFrame( texId );
+			mImg.setAnimationSpeed( animFps );
+		}
 		mImg.setRenderMode( mImgRT );
 		mImg.setScale( scale );
 
@@ -503,9 +511,12 @@ void App::setImage( const Uint32& Tex, const std::string& path ) {
 		if ( !mLockZoomAndPosition )
 			scaleToScreen();
 
-		Texture* pTex = TF->getTexture( Tex );
-
-		pTex->setFilter( mFilter );
+		Texture* pTex = nullptr;
+		for ( Uint32 texId : Tex ) {
+			pTex = TF->getTexture( texId );
+			if ( pTex )
+				pTex->setFilter( mFilter );
+		}
 
 		if ( NULL != pTex ) {
 			FonCache.setString( "File: " + String::fromUtf8( mFile ) +
@@ -558,12 +569,15 @@ static Sizei imageSizeFromName( const std::string& path ) {
 	return size;
 }
 
-Uint32 App::loadImage( const std::string& path, const bool& setAsCurrent ) {
-	Uint32 TexId = 0;
+std::pair<std::vector<Uint32>, Float> App::loadImage( const std::string& path,
+													  const bool& setAsCurrent ) {
+	std::vector<Uint32> textures;
+	std::string filePath( mFilePath + path );
+	Float animFps = 60;
 
-	if ( isRawImage( mFilePath + path ) ) {
+	if ( isRawImage( filePath ) ) {
 		ScopedBuffer buffer;
-		if ( FileSystem::fileGet( mFilePath + path, buffer ) ) {
+		if ( FileSystem::fileGet( filePath, buffer ) ) {
 			Sizei size( imageSizeFromName( path ) );
 			int channels = 0;
 			for ( size_t c = 1; c <= 4; c++ ) {
@@ -576,20 +590,30 @@ Uint32 App::loadImage( const std::string& path, const bool& setAsCurrent ) {
 				Texture* tex = TF->loadFromPixels( buffer.get() + 8, size.getWidth(),
 												   size.getHeight(), channels );
 				if ( tex )
-					TexId = tex->getTextureId();
+					textures.push_back( tex->getTextureId() );
 			}
 		}
+	} else if ( Image::getFormat( filePath ) == Image::Format::GIF ) {
+		IOStreamFile stream( filePath );
+		auto [gif, delay] = Image::loadGif( stream );
+		for ( const auto& i : gif ) {
+			auto tex = TextureFactory::instance()->loadFromPixels( i.getPixels(), i.getWidth(),
+																   i.getHeight(), i.getChannels() );
+			textures.push_back( tex->getTextureId() );
+		}
+		delay = delay ? delay : 100;
+		animFps = 1000.f / delay;
 	} else {
-		Texture* tex = TF->loadFromFile( mFilePath + path, false, Texture::ClampMode::ClampToEdge,
-										 false, false, formatConfiguration );
+		Texture* tex = TF->loadFromFile( filePath, false, Texture::ClampMode::ClampToEdge, false,
+										 false, formatConfiguration );
 		if ( tex )
-			TexId = tex->getTextureId();
+			textures.push_back( tex->getTextureId() );
 	}
 
 	if ( setAsCurrent )
-		setImage( TexId, path );
+		setImage( textures, path, animFps );
 
-	return TexId;
+	return { textures, animFps };
 }
 
 void App::updateImages() {
@@ -599,30 +623,39 @@ void App::updateImages() {
 		}
 
 		if ( i == ( mCurImg - 1 ) || i == ( mCurImg + 1 ) ) {
-			if ( mFiles[i].Tex == 0 ) {
-				mFiles[i].Tex = loadImage( mFiles[i].Path );
+			if ( mFiles[i].Tex.empty() ) {
+				auto res = loadImage( mFiles[i].Path );
+				mFiles[i].Tex = std::move( res.first );
+				mFiles[i].animFps = res.second;
 			}
 		}
 
 		if ( i == mCurImg ) {
-			if ( mFiles[i].Tex == 0 ) {
-				mFiles[i].Tex = loadImage( mFiles[i].Path, true );
+			if ( mFiles[i].Tex.empty() ) {
+				auto res = loadImage( mFiles[i].Path, true );
+				mFiles[i].Tex = std::move( res.first );
+				mFiles[i].animFps = res.second;
 			} else
-				setImage( mFiles[i].Tex, mFiles[i].Path );
+				setImage( mFiles[i].Tex, mFiles[i].Path, mFiles[i].animFps );
 		}
 	}
 }
 
 void App::unloadImage( const Uint32& img ) {
-	if ( mFiles[img].Tex != 0 ) {
-		TF->remove( mFiles[img].Tex );
-		mFiles[img].Tex = 0;
-	}
+	for ( Uint32 texId : mFiles[img].Tex )
+		TF->remove( texId );
+	mFiles[img].Tex.clear();
 }
 
 void App::optUpdate() {
 	Vector2f scale( mImg.getScale() );
-	mImg.createStatic( mFiles[mCurImg].Tex );
+	if ( mFiles[mCurImg].Tex.size() == 1 )
+		mImg.createStatic( mFiles[mCurImg].Tex[0] );
+	else {
+		mImg.reset();
+		for ( Uint32 texId : mFiles[mCurImg].Tex )
+			mImg.addFrame( texId );
+	}
 	mImg.setScale( scale );
 
 	if ( !mLockZoomAndPosition ) {
@@ -635,14 +668,16 @@ void App::optUpdate() {
 		mLaterLoad = true;
 		mLastLaterTick = Sys::getTicks();
 
-		Texture* Tex = TF->getTexture( mFiles[mCurImg].Tex );
+		if ( !mFiles[mCurImg].Tex.empty() ) {
+			Texture* Tex = TF->getTexture( mFiles[mCurImg].Tex[0] );
 
-		if ( Tex ) {
-			FonCache.setString( "File: " + String::fromUtf8( mFiles[mCurImg].Path ) +
-								"\nWidth: " + String::toString( Tex->getWidth() ) +
-								"\nHeight: " + String::toString( Tex->getHeight() ) + "\n" +
-								String::toString( mCurImg + 1 ) + "/" +
-								String::toString( (Uint64)mFiles.size() ) );
+			if ( Tex ) {
+				FonCache.setString( "File: " + String::fromUtf8( mFiles[mCurImg].Path ) +
+									"\nWidth: " + String::toString( Tex->getWidth() ) +
+									"\nHeight: " + String::toString( Tex->getHeight() ) + "\n" +
+									String::toString( mCurImg + 1 ) + "/" +
+									String::toString( (Uint64)mFiles.size() ) );
+			}
 		}
 	} else
 		updateImages();
@@ -758,7 +793,7 @@ void App::input() {
 		}
 	}
 
-	if ( mFiles.size() && mFiles[mCurImg].Tex && !Con->isActive() ) {
+	if ( mFiles.size() && !mFiles[mCurImg].Tex.empty() && !Con->isActive() ) {
 		if ( KM->isKeyUp( KEY_HOME ) ) {
 			loadFirstImage();
 			disableSlideShow();
@@ -930,11 +965,11 @@ void App::input() {
 		if ( KM->isKeyUp( KEY_A ) ) {
 			mFilter = mFilter == Texture::Filter::Linear ? Texture::Filter::Nearest
 														 : Texture::Filter::Linear;
-
-			Texture* Tex = mImg.getCurrentTextureRegion()->getTexture();
-
-			if ( Tex ) {
-				Tex->setFilter( mFilter );
+			size_t numFrames = mImg.getNumFrames();
+			for ( size_t i = 0; i < numFrames; i++ ) {
+				Texture* tex = mImg.getTextureRegion( i )->getTexture();
+				if ( tex )
+					tex->setFilter( mFilter );
 			}
 		}
 
@@ -1019,8 +1054,8 @@ void App::doSlideShow() {
 }
 
 void App::scaleToScreen( const bool& force ) {
-	if ( mFiles.size() && mFiles[mCurImg].Tex ) {
-		Texture* Tex = TF->getTexture( mFiles[mCurImg].Tex );
+	if ( mFiles.size() && !mFiles[mCurImg].Tex.empty() ) {
+		Texture* Tex = TF->getTexture( mFiles[mCurImg].Tex[0] );
 
 		if ( NULL == Tex )
 			return;
@@ -1035,8 +1070,8 @@ void App::scaleToScreen( const bool& force ) {
 }
 
 void App::zoomImage() {
-	if ( mFiles.size() && mFiles[mCurImg].Tex ) {
-		Texture* Tex = TF->getTexture( mFiles[mCurImg].Tex );
+	if ( mFiles.size() && !mFiles[mCurImg].Tex.empty() ) {
+		Texture* Tex = TF->getTexture( mFiles[mCurImg].Tex[0] );
 
 		if ( NULL == Tex )
 			return;
@@ -1069,7 +1104,7 @@ void App::render() {
 
 	doSlideShow();
 
-	if ( mFiles.size() && mFiles[mCurImg].Tex ) {
+	if ( mFiles.size() && !mFiles[mCurImg].Tex.empty() ) {
 		doFade();
 
 		Texture* Tex = mImg.getCurrentTextureRegion()->getTexture();
@@ -1080,6 +1115,8 @@ void App::render() {
 			Float Y = static_cast<Float>(
 				static_cast<Int32>( HHeight - mImg.getSize().getHeight() * 0.5f ) );
 
+			mImg.setAutoAnimate( false );
+			mImg.update();
 			mImg.setOffset( Vector2i( X, Y ) );
 			mImg.setAlpha( mCurAlpha );
 			mImg.draw();
