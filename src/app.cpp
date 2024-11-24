@@ -595,12 +595,9 @@ std::pair<std::vector<Uint32>, Float> App::loadImage( const std::string& path,
 		}
 	} else if ( Image::getFormat( filePath ) == Image::Format::GIF ) {
 		IOStreamFile stream( filePath );
-		auto [gif, delay] = Image::loadGif( stream );
-		for ( const auto& i : gif ) {
-			auto tex = TextureFactory::instance()->loadFromPixels( i.getPixels(), i.getWidth(),
-																   i.getHeight(), i.getChannels() );
+		auto [gif, delay] = Texture::loadGif( stream );
+		for ( const auto& tex : gif )
 			textures.push_back( tex->getTextureId() );
-		}
 		delay = delay ? delay : 100;
 		animFps = 1000.f / delay;
 	} else {
