@@ -487,6 +487,7 @@ void App::setImage( const std::vector<Uint32>& Tex, const std::string& path, Flo
 		mImgRT = RENDER_NORMAL;
 
 		Vector2f scale( mImg.getScale() );
+		mImg.setAsTextureRegionOwner( true );
 		if ( Tex.size() == 1 ) {
 			mImg.createStatic( Tex[0] );
 		} else {
@@ -646,6 +647,7 @@ void App::unloadImage( const Uint32& img ) {
 
 void App::optUpdate() {
 	Vector2f scale( mImg.getScale() );
+	mImg.setAsTextureRegionOwner( true );
 	if ( mFiles[mCurImg].Tex.size() == 1 )
 		mImg.createStatic( mFiles[mCurImg].Tex[0] );
 	else {
