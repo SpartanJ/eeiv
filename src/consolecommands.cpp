@@ -3,12 +3,12 @@
 
 static std::string createSavePath( const std::string& oriPath, Uint32 width, Uint32 height,
 								   Image::SaveType saveType ) {
-	Image::SaveType type = saveType == Image::SaveType::SAVE_TYPE_UNKNOWN
+	Image::SaveType type = saveType == Image::SaveType::Unknown
 							   ? Image::extensionToSaveType( FileSystem::fileExtension( oriPath ) )
 							   : saveType;
 
-	if ( Image::SaveType::SAVE_TYPE_UNKNOWN == type ) {
-		type = Image::SaveType::SAVE_TYPE_PNG;
+	if ( Image::SaveType::Unknown == type ) {
+		type = Image::SaveType::PNG;
 	}
 
 	return FileSystem::fileRemoveExtension( oriPath ) + "-" + String::toString( width ) + "x" +
@@ -42,9 +42,8 @@ void ConsoleCommands::resizeImg( const std::string& Path, const std::string& out
 								 const Uint32& NewWidth, const Uint32& NewHeight,
 								 Image::SaveType saveType ) {
 	if ( App::isImage( Path ) ) {
-		Image::SaveType type = Image::SaveType::SAVE_TYPE_UNKNOWN != saveType
-								   ? saveType
-								   : getPathSaveType( outputPath );
+		Image::SaveType type =
+			Image::SaveType::Unknown != saveType ? saveType : getPathSaveType( outputPath );
 
 		Image img( Path );
 
@@ -66,9 +65,8 @@ void ConsoleCommands::thumbnailImg( const std::string& Path, const Uint32& MaxWi
 		if ( NULL != thumb ) {
 			std::string newPath(
 				createSavePath( Path, thumb->getWidth(), thumb->getHeight(), saveType ) );
-			Image::SaveType type = Image::SaveType::SAVE_TYPE_UNKNOWN != saveType
-									   ? saveType
-									   : getPathSaveType( newPath );
+			Image::SaveType type =
+				Image::SaveType::Unknown != saveType ? saveType : getPathSaveType( newPath );
 
 			thumb->saveToFile( newPath, type );
 
@@ -124,9 +122,8 @@ void ConsoleCommands::centerCropImg( const std::string& Path, const Uint32& Widt
 		if ( NULL != croppedImg ) {
 			std::string newPath(
 				createSavePath( Path, croppedImg->getWidth(), croppedImg->getHeight(), saveType ) );
-			Image::SaveType type = Image::SaveType::SAVE_TYPE_UNKNOWN != saveType
-									   ? saveType
-									   : getPathSaveType( newPath );
+			Image::SaveType type =
+				Image::SaveType::Unknown != saveType ? saveType : getPathSaveType( newPath );
 
 			croppedImg->saveToFile( newPath, type );
 
@@ -134,9 +131,8 @@ void ConsoleCommands::centerCropImg( const std::string& Path, const Uint32& Widt
 		} else {
 			std::string newPath(
 				createSavePath( Path, img.getWidth(), img.getHeight(), saveType ) );
-			Image::SaveType type = Image::SaveType::SAVE_TYPE_UNKNOWN != saveType
-									   ? saveType
-									   : getPathSaveType( newPath );
+			Image::SaveType type =
+				Image::SaveType::Unknown != saveType ? saveType : getPathSaveType( newPath );
 
 			img.saveToFile( newPath, type );
 		}
@@ -227,7 +223,7 @@ void ConsoleCommands::cmdImgResize( const std::vector<String>& params ) {
 	if ( params.size() >= 3 ) {
 		Uint32 nWidth = 0;
 		Uint32 nHeight = 0;
-		Image::SaveType saveType = Image::SaveType::SAVE_TYPE_UNKNOWN;
+		Image::SaveType saveType = Image::SaveType::Unknown;
 		Uint32 override = 0;
 
 		bool Res1 = String::fromString( nWidth, params[1] );
@@ -267,7 +263,7 @@ void ConsoleCommands::cmdImgThumbnail( const std::vector<String>& params ) {
 	if ( params.size() >= 3 ) {
 		Uint32 nWidth = 0;
 		Uint32 nHeight = 0;
-		Image::SaveType saveType = Image::SaveType::SAVE_TYPE_UNKNOWN;
+		Image::SaveType saveType = Image::SaveType::Unknown;
 
 		bool Res1 = String::fromString( nWidth, params[1] );
 		bool Res2 = String::fromString( nHeight, params[2] );
@@ -299,7 +295,7 @@ void ConsoleCommands::cmdImgCenterCrop( const std::vector<String>& params ) {
 	if ( params.size() >= 3 ) {
 		Uint32 nWidth = 0;
 		Uint32 nHeight = 0;
-		Image::SaveType saveType = Image::SaveType::SAVE_TYPE_UNKNOWN;
+		Image::SaveType saveType = Image::SaveType::Unknown;
 
 		bool Res1 = String::fromString( nWidth, params[1] );
 		bool Res2 = String::fromString( nHeight, params[2] );
@@ -329,7 +325,7 @@ void ConsoleCommands::cmdImgScale( const std::vector<String>& params ) {
 	String Error( "Usage example: imgscale scale path_to_img format override_path" );
 	if ( params.size() >= 2 ) {
 		Float Scale = 0;
-		Image::SaveType saveType = Image::SaveType::SAVE_TYPE_UNKNOWN;
+		Image::SaveType saveType = Image::SaveType::Unknown;
 		Uint32 override = 0;
 
 		bool Res = String::fromString( Scale, params[1] );
@@ -448,7 +444,7 @@ void ConsoleCommands::cmdImgChangeFormat( const std::vector<String>& params ) {
 
 				Image::SaveType saveType = Image::extensionToSaveType( toFormat );
 
-				if ( Image::SaveType::SAVE_TYPE_UNKNOWN != saveType ) {
+				if ( Image::SaveType::Unknown != saveType ) {
 					Image* img = eeNew( Image, ( fPath ) );
 					img->saveToFile( fName, saveType );
 					eeSAFE_DELETE( img );
@@ -493,7 +489,7 @@ void ConsoleCommands::cmdBatchImgChangeFormat( const std::vector<String>& params
 
 					Image::SaveType saveType = Image::extensionToSaveType( toFormat );
 
-					if ( Image::SaveType::SAVE_TYPE_UNKNOWN != saveType ) {
+					if ( Image::SaveType::Unknown != saveType ) {
 						Image* img = eeNew( Image, ( fPath ) );
 						img->saveToFile( fPath, saveType );
 						eeSAFE_DELETE( img );
