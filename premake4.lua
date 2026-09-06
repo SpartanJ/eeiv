@@ -66,16 +66,16 @@ if _OPTIONS.platform then
 end
 
 function os.get_real()
-	if 	_OPTIONS.platform == "ios-arm7" or 
+	if 	_OPTIONS.platform == "ios-arm7" or
 		_OPTIONS.platform == "ios-x86" or
 		_OPTIONS.platform == "ios-cross-arm7" then
 		return "ios"
 	end
-	
+
 	if _OPTIONS.platform == "android-arm7" then
 		return "android"
 	end
-	
+
 	if 	_OPTIONS.platform == "mingw32" then
 		return _OPTIONS.platform
 	end
@@ -106,24 +106,24 @@ end
 function os_findlib( name )
 	if os.is("macosx") then
 		local path = os.findlib( name .. ".framework" )
-		
+
 		if path then
 			return path
 		end
 	end
-	
+
 	return os.findlib( name )
 end
 
 function get_backend_link_name( name )
 	if os.is("macosx") then
 		local fname = name .. ".framework"
-		
+
 		if os.findlib( fname ) then -- Search for the framework
 			return fname
 		end
 	end
-	
+
 	return name
 end
 
@@ -131,7 +131,7 @@ function string.starts(String,Start)
 	if ( _ACTION ) then
 		return string.sub(String,1,string.len(Start))==Start
 	end
-	
+
 	return false
 end
 
@@ -161,13 +161,19 @@ solution "eeiv"
 	objdir("obj/" .. os.get() .. "/")
 	configurations { "debug", "release" }
 
+	if not is_vs() then
+		buildoptions{ "-std=c++20" }
+	else
+		buildoptions{ "/std:c++20", "/utf-8", "/Zc:preprocessor" }
+	end
+
 	project "eeiv"
 		kind "WindowedApp"
 		language "C++"
-		
+
 		files { "src/**.cpp" }
 		includedirs { "include", "src" }
-		
+
 		add_cross_config_links()
 
 		configuration "debug"

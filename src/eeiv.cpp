@@ -1,4 +1,4 @@
-#include "capp.hpp"
+#include "app.hpp"
 
 EE_MAIN_FUNC int main(int argc, char *argv[]) {
 	App * MyApp = eeNew( App, ( argc, argv ) );
