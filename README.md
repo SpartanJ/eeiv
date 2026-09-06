@@ -1,6 +1,14 @@
 eeiv
 ====
 
+### eeiv source has moved to [eepp](https://github.com/SpartanJ/eepp) repository
+
+eepp is now a monorepository and holds the code of all related projects, including eeiv.
+eeiv has been also ported to eepp GUI, in this repository will live the old source, kept just as
+reference to the new implementation.
+
+---
+
 **eeiv** is a _very_ simple image viewer that uses the [eepp](https://github.com/SpartanJ/eepp)
 library to decode and show the images on screen. It was implemented a long time
 ago for my own needs. It does not represent at all the capabilities of eepp, so

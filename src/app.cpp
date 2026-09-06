@@ -232,8 +232,8 @@ bool App::init() {
 			return false;
 		}
 
-		Fon = reinterpret_cast<Font*>( TTF );
-		Mon = reinterpret_cast<Font*>( TTFMon );
+		Fon = TTF.get();
+		Mon = TTFMon.get();
 
 		FonCache.setFont( Fon );
 		FonCache.setFontSize( mConfig.AppFontSize );
@@ -480,20 +480,19 @@ void App::fastLoadImage( const Uint32& ImgNum ) {
 	mFirstLoad = true;
 }
 
-void App::setImage( const std::vector<Uint32>& Tex, const std::string& path, Float animFps ) {
+void App::setImage( const std::vector<TexturePtr>& Tex, const std::string& path, Float animFps ) {
 	if ( !Tex.empty() ) {
 		mFiles[mCurImg].Tex = Tex;
 
 		mImgRT = RENDER_NORMAL;
 
 		Vector2f scale( mImg.getScale() );
-		mImg.setAsTextureRegionOwner( true );
 		if ( Tex.size() == 1 ) {
 			mImg.createStatic( Tex[0] );
 		} else {
 			mImg.reset();
-			for ( Uint32 texId : Tex )
-				mImg.addFrame( texId );
+			for ( const TexturePtr& texture : Tex )
+				mImg.addFrame( texture );
 			mImg.setAnimationSpeed( animFps );
 		}
 		mImg.setRenderMode( mImgRT );
@@ -513,8 +512,8 @@ void App::setImage( const std::vector<Uint32>& Tex, const std::string& path, Flo
 			scaleToScreen();
 
 		Texture* pTex = nullptr;
-		for ( Uint32 texId : Tex ) {
-			pTex = TF->getTexture( texId );
+		for ( const TexturePtr& texture : Tex ) {
+			pTex = texture.get();
 			if ( pTex )
 				pTex->setFilter( mFilter );
 		}
@@ -570,9 +569,9 @@ static Sizei imageSizeFromName( const std::string& path ) {
 	return size;
 }
 
-std::pair<std::vector<Uint32>, Float> App::loadImage( const std::string& path,
-													  const bool& setAsCurrent ) {
-	std::vector<Uint32> textures;
+std::pair<std::vector<TexturePtr>, Float> App::loadImage( const std::string& path,
+														  const bool& setAsCurrent ) {
+	std::vector<TexturePtr> textures;
 	std::string filePath( mFilePath + path );
 	Float animFps = 60;
 
@@ -588,24 +587,23 @@ std::pair<std::vector<Uint32>, Float> App::loadImage( const std::string& path,
 				}
 			}
 			if ( channels > 0 ) {
-				Texture* tex = TF->loadFromPixels( buffer.get() + 8, size.getWidth(),
-												   size.getHeight(), channels );
+				TexturePtr tex = TF->loadFromPixels( buffer.get() + 8, size.getWidth(),
+													 size.getHeight(), channels );
 				if ( tex )
-					textures.push_back( tex->getTextureId() );
+					textures.push_back( std::move( tex ) );
 			}
 		}
 	} else if ( Image::getFormat( filePath ) == Image::Format::GIF ) {
 		IOStreamFile stream( filePath );
 		auto [gif, delay] = Texture::loadGif( stream );
-		for ( const auto& tex : gif )
-			textures.push_back( tex->getTextureId() );
+		textures = std::move( gif );
 		delay = delay ? delay : 100;
 		animFps = 1000.f / delay;
 	} else {
-		Texture* tex = TF->loadFromFile( filePath, false, Texture::ClampMode::ClampToEdge, false,
-										 false, formatConfiguration );
+		TexturePtr tex = TF->loadFromFile( filePath, false, Texture::ClampMode::ClampToEdge, false,
+										   false, formatConfiguration );
 		if ( tex )
-			textures.push_back( tex->getTextureId() );
+			textures.push_back( std::move( tex ) );
 	}
 
 	if ( setAsCurrent )
@@ -640,20 +638,17 @@ void App::updateImages() {
 }
 
 void App::unloadImage( const Uint32& img ) {
-	for ( Uint32 texId : mFiles[img].Tex )
-		TF->remove( texId );
 	mFiles[img].Tex.clear();
 }
 
 void App::optUpdate() {
 	Vector2f scale( mImg.getScale() );
-	mImg.setAsTextureRegionOwner( true );
 	if ( mFiles[mCurImg].Tex.size() == 1 )
 		mImg.createStatic( mFiles[mCurImg].Tex[0] );
 	else {
 		mImg.reset();
-		for ( Uint32 texId : mFiles[mCurImg].Tex )
-			mImg.addFrame( texId );
+		for ( const TexturePtr& texture : mFiles[mCurImg].Tex )
+			mImg.addFrame( texture );
 	}
 	mImg.setScale( scale );
 
@@ -668,7 +663,7 @@ void App::optUpdate() {
 		mLastLaterTick = Sys::getTicks();
 
 		if ( !mFiles[mCurImg].Tex.empty() ) {
-			Texture* Tex = TF->getTexture( mFiles[mCurImg].Tex[0] );
+			Texture* Tex = mFiles[mCurImg].Tex[0].get();
 
 			if ( Tex ) {
 				FonCache.setString( "File: " + String::fromUtf8( mFiles[mCurImg].Path ) +
@@ -966,7 +961,7 @@ void App::input() {
 														 : Texture::Filter::Linear;
 			size_t numFrames = mImg.getNumFrames();
 			for ( size_t i = 0; i < numFrames; i++ ) {
-				Texture* tex = mImg.getTextureRegion( i )->getTexture();
+				Texture* tex = mImg.getTextureRegion( i )->getTexture().get();
 				if ( tex )
 					tex->setFilter( mFilter );
 			}
@@ -1003,7 +998,7 @@ void App::input() {
 			Texture* curTex;
 
 			if ( NULL != mImg.getCurrentTextureRegion() &&
-				 NULL != ( curTex = mImg.getCurrentTextureRegion()->getTexture() ) ) {
+				 NULL != ( curTex = mImg.getCurrentTextureRegion()->getTexture().get() ) ) {
 				curTex->setMipmap( !curTex->getMipmap() );
 				curTex->reload();
 			}
@@ -1017,7 +1012,7 @@ void App::input() {
 			Texture* curTex;
 
 			if ( NULL != mImg.getCurrentTextureRegion() &&
-				 NULL != ( curTex = mImg.getCurrentTextureRegion()->getTexture() ) ) {
+				 NULL != ( curTex = mImg.getCurrentTextureRegion()->getTexture().get() ) ) {
 				Image img( curTex->getFilepath(), 0, formatConfiguration );
 				curTex->replace( &img );
 			}
@@ -1054,7 +1049,7 @@ void App::doSlideShow() {
 
 void App::scaleToScreen( const bool& force ) {
 	if ( mFiles.size() && !mFiles[mCurImg].Tex.empty() ) {
-		Texture* Tex = TF->getTexture( mFiles[mCurImg].Tex[0] );
+		Texture* Tex = mFiles[mCurImg].Tex[0].get();
 
 		if ( NULL == Tex )
 			return;
@@ -1070,7 +1065,7 @@ void App::scaleToScreen( const bool& force ) {
 
 void App::zoomImage() {
 	if ( mFiles.size() && !mFiles[mCurImg].Tex.empty() ) {
-		Texture* Tex = TF->getTexture( mFiles[mCurImg].Tex[0] );
+		Texture* Tex = mFiles[mCurImg].Tex[0].get();
 
 		if ( NULL == Tex )
 			return;
@@ -1106,7 +1101,7 @@ void App::render() {
 	if ( mFiles.size() && !mFiles[mCurImg].Tex.empty() ) {
 		doFade();
 
-		Texture* Tex = mImg.getCurrentTextureRegion()->getTexture();
+		Texture* Tex = mImg.getCurrentTextureRegion()->getTexture().get();
 
 		if ( Tex ) {
 			Float X = static_cast<Float>(
@@ -1154,7 +1149,7 @@ void App::doFade() {
 		Texture* Tex = NULL;
 
 		if ( NULL != mOldImg.getCurrentTextureRegion() &&
-			 ( Tex = mOldImg.getCurrentTextureRegion()->getTexture() ) ) {
+			 ( Tex = mOldImg.getCurrentTextureRegion()->getTexture().get() ) ) {
 			Float X = static_cast<Float>(
 				static_cast<Int32>( HWidth - mOldImg.getSize().getWidth() * 0.5f ) );
 			Float Y = static_cast<Float>(
@@ -1198,6 +1193,8 @@ void App::saveConfig() {
 
 void App::end() {
 	saveConfig();
+	TTF.reset();
+	TTFMon.reset();
 	Engine::destroySingleton();
 }
 

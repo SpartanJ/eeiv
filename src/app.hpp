@@ -9,7 +9,7 @@ class App {
   public:
 	struct ImageData {
 		std::string Path;
-		std::vector<Uint32> Tex;
+		std::vector<TexturePtr> Tex;
 		Float animFps{ 60 };
 	};
 
@@ -82,13 +82,15 @@ class App {
 	void scaleToScreen( const bool& force = false );
 	void getImages();
 	Uint32 curImagePos( const std::string& path );
-	std::pair<std::vector<Uint32>, Float> loadImage( const std::string& path, const bool& SetAsCurrent = false );
+	std::pair<std::vector<TexturePtr>, Float> loadImage( const std::string& path,
+														 const bool& SetAsCurrent = false );
 	void loadNextImage();
 	void loadPrevImage();
 	void zoomImage();
 	void unloadImage( const Uint32& img );
 	void updateImages();
-	void setImage( const std::vector<Uint32>& Tex, const std::string& path, Float animFps = 60 );
+	void setImage( const std::vector<TexturePtr>& Tex, const std::string& path,
+				   Float animFps = 60 );
 	void doFade();
 	void createFade();
 	void optUpdate();
@@ -120,7 +122,7 @@ class App {
 	Font* Mon; //! Console App Font
 	Text FonCache;
 
-	FontTrueType *TTF, *TTFMon;
+	FontTrueTypePtr TTF, TTFMon;
 
 	UIConsole* Con; //! Console Instance
 
